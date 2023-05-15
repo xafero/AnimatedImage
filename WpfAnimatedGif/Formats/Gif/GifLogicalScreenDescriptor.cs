@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace WpfAnimatedGif.Decoding
+namespace WpfAnimatedGif.Formats.Gif
 {
     internal class GifLogicalScreenDescriptor
     {
@@ -32,7 +32,7 @@ namespace WpfAnimatedGif.Decoding
             HasGlobalColorTable = (packedFields & 0x80) != 0;
             ColorResolution = ((packedFields & 0x70) >> 4) + 1;
             IsGlobalColorTableSorted = (packedFields & 0x08) != 0;
-            GlobalColorTableSize = 1 << ((packedFields & 0x07) + 1);
+            GlobalColorTableSize = 1 << (packedFields & 0x07) + 1;
             BackgroundColorIndex = bytes[5];
             PixelAspectRatio =
                 bytes[5] == 0

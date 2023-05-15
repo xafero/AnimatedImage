@@ -1,4 +1,4 @@
-namespace WpfAnimatedGif.Decoding
+namespace WpfAnimatedGif.Formats.Gif
 {
     internal struct GifColor
     {

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace WpfAnimatedGif.Decoding
+namespace WpfAnimatedGif.Formats.Gif
 {
     internal class GifFile
     {
@@ -79,8 +79,8 @@ namespace WpfAnimatedGif.Decoding
                 }
             }
 
-            this.Frames = frames.AsReadOnly();
-            this.Extensions = specialExtensions.AsReadOnly();
+            Frames = frames.AsReadOnly();
+            Extensions = specialExtensions.AsReadOnly();
         }
     }
 }

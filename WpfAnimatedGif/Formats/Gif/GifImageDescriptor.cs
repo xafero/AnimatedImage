@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace WpfAnimatedGif.Decoding
+namespace WpfAnimatedGif.Formats.Gif
 {
     internal class GifImageDescriptor
     {
@@ -37,7 +37,7 @@ namespace WpfAnimatedGif.Decoding
             HasLocalColorTable = (packedFields & 0x80) != 0;
             Interlace = (packedFields & 0x40) != 0;
             IsLocalColorTableSorted = (packedFields & 0x20) != 0;
-            LocalColorTableSize = 1 << ((packedFields & 0x07) + 1);
+            LocalColorTableSize = 1 << (packedFields & 0x07) + 1;
         }
     }
 }

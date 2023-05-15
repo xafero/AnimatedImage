@@ -13,7 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Resources;
-using WpfAnimatedGif.Decoding;
+using WpfAnimatedGif.Formats.Gif;
 
 namespace WpfAnimatedGif
 {
@@ -424,16 +424,15 @@ namespace WpfAnimatedGif
 
         public static DelayBitmapSource CreateAsync(GifFile metadata, GifFrame frame, FrameMetadata framemeta, Task<WriteableBitmap> baseImageTask)
         {
-            var data = new DelayBitmapData(frame);
             var task = System.Threading.Tasks.Task.Run(async () =>
             {
                 var dispatcher = Application.Current.Dispatcher;
 
-                var colormap = data.Frame.Descriptor.HasLocalColorTable ?
-                                    data.Frame.LocalColorTable :
+                var colormap = frame.Descriptor.HasLocalColorTable ?
+                                    frame.LocalColorTable :
                                     metadata.GlobalColorTable;
 
-                var indics = data.Decompress();
+                var indics = frame.ImageData.Decompress();
 
                 var baseImage = await baseImageTask;
 
@@ -464,14 +463,11 @@ namespace WpfAnimatedGif
 
         public static DelayBitmapSource Create(GifFile metadata, GifFrame frame, FrameMetadata framemeta, Task<WriteableBitmap> backgroundTask)
         {
-            var data = new DelayBitmapData(frame);
-            var dispatcher = Application.Current.Dispatcher;
-
-            var colormap = data.Frame.Descriptor.HasLocalColorTable ?
-                                data.Frame.LocalColorTable :
+            var colormap = frame.Descriptor.HasLocalColorTable ?
+                                frame.LocalColorTable :
                                 metadata.GlobalColorTable;
 
-            var indics = data.Decompress();
+            var indics = frame.ImageData.Decompress();
 
             var bitmap = new WriteableBitmap(backgroundTask.Result);
             var rect = new Int32Rect(
@@ -512,147 +508,6 @@ namespace WpfAnimatedGif
             }
 
             bitmap.WritePixels(rect, colors, 4 * rect.Width, 0);
-        }
-    }
-
-    internal class DelayBitmapData
-    {
-        private static readonly int MaxStackSize = 4096;
-        private static readonly int MaxBits = 4097;
-
-        public GifFrame Frame { get; }
-        public GifImageData Data { get; }
-
-        public DelayBitmapData(GifFrame frame)
-        {
-            Frame = frame;
-            Data = frame.ImageData;
-        }
-
-        public byte[] Decompress()
-        {
-            var totalPixels = Frame.Descriptor.Width * Frame.Descriptor.Height;
-
-            // Initialize GIF data stream decoder.
-            var dataSize = Data.LzwMinimumCodeSize;
-            var clear = 1 << dataSize;
-            var endOfInformation = clear + 1;
-            var available = clear + 2;
-            var oldCode = -1;
-            var codeSize = dataSize + 1;
-            var codeMask = (1 << codeSize) - 1;
-
-            var prefixBuf = new short[MaxStackSize];
-            var suffixBuf = new byte[MaxStackSize];
-            var pixelStack = new byte[MaxStackSize];
-            var indics = new byte[totalPixels];
-
-            for (var code = 0; code < clear; code++)
-            {
-                suffixBuf[code] = (byte)code;
-            }
-
-            // Decode GIF pixel stream.
-            int bits, first, top, pixelIndex;
-            var datum = bits = first = top = pixelIndex = 0;
-
-            var blockSize = Data.CompressedData.Length;
-            var tempBuf = Data.CompressedData;
-
-            var blockPos = 0;
-
-            while (blockPos < blockSize)
-            {
-                datum += tempBuf[blockPos] << bits;
-                blockPos++;
-
-                bits += 8;
-
-                while (bits >= codeSize)
-                {
-                    // Get the next code.
-                    var code = datum & codeMask;
-                    datum >>= codeSize;
-                    bits -= codeSize;
-
-                    // Interpret the code
-                    if (code == clear)
-                    {
-                        // Reset decoder.
-                        codeSize = dataSize + 1;
-                        codeMask = (1 << codeSize) - 1;
-                        available = clear + 2;
-                        oldCode = -1;
-                        continue;
-                    }
-
-                    // Check for explicit end-of-stream
-                    if (code == endOfInformation)
-                        return indics;
-
-                    if (oldCode == -1)
-                    {
-                        indics[pixelIndex++] = suffixBuf[code];
-                        oldCode = code;
-                        first = code;
-                        continue;
-                    }
-
-                    var inCode = code;
-                    if (code >= available)
-                    {
-                        pixelStack[top++] = (byte)first;
-                        code = oldCode;
-
-                        if (top == 4097)
-                            ThrowException();
-                    }
-
-                    while (code >= clear)
-                    {
-                        if (code >= MaxBits || code == prefixBuf[code])
-                            ThrowException();
-
-                        pixelStack[top++] = suffixBuf[code];
-                        code = prefixBuf[code];
-
-                        if (top == MaxBits)
-                            ThrowException();
-                    }
-
-                    first = suffixBuf[code];
-                    pixelStack[top++] = (byte)first;
-
-                    // Add new code to the dictionary
-                    if (available < MaxStackSize)
-                    {
-                        prefixBuf[available] = (short)oldCode;
-                        suffixBuf[available] = (byte)first;
-                        available++;
-
-                        if (((available & codeMask) == 0) && (available < MaxStackSize))
-                        {
-                            codeSize++;
-                            codeMask += available;
-                        }
-                    }
-
-                    oldCode = inCode;
-
-                    // Drain the pixel stack.
-                    do
-                    {
-                        indics[pixelIndex++] = pixelStack[--top];
-                    } while (top > 0);
-                }
-            }
-
-            while (pixelIndex < totalPixels)
-                indics[pixelIndex++] = 0; // clear missing pixels
-
-            return indics;
-
-            void ThrowException() => throw new InvalidDataException();
         }
     }
 }

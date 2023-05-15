@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace WpfAnimatedGif.Decoding
+namespace WpfAnimatedGif.Formats.Gif
 {
     internal class GifFrame : GifBlock
     {
@@ -40,7 +40,7 @@ namespace WpfAnimatedGif.Decoding
             {
                 LocalColorTable = GifHelpers.ReadColorTable(stream, Descriptor.LocalColorTableSize);
             }
-            ImageData = GifImageData.ReadImageData(stream, metadataOnly);
+            ImageData = GifImageData.ReadImageData(this, stream, metadataOnly);
             Extensions = controlExtensions.ToList().AsReadOnly();
         }
     }

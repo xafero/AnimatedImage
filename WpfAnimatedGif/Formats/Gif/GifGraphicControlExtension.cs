@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace WpfAnimatedGif.Decoding
+namespace WpfAnimatedGif.Formats.Gif
 {
     // label 0xF9
     internal class GifGraphicControlExtension : GifExtension

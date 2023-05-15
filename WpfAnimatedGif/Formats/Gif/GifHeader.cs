@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace WpfAnimatedGif.Decoding
+namespace WpfAnimatedGif.Formats.Gif
 {
     internal class GifHeader : GifBlock
     {
