@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.IO.Packaging;
@@ -12,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Resources;
+using WpfAnimatedGif.Formats;
 using WpfAnimatedGif.Formats.Gif;
 
 namespace WpfAnimatedGif
@@ -484,10 +486,10 @@ namespace WpfAnimatedGif
                 var animation = GetAnimation(imageControl, source);
                 if (animation != null)
                 {
-                    if (animation.KeyFrames.Count > 0)
+                    if (animation.Count > 0)
                     {
                         // For some reason, it sometimes throws an exception the first time... the second time it works.
-                        TryTwice(() => imageControl.Source = animation.FirstFrame.Bitmap.Task.Result);
+                        TryTwice(() => imageControl.Source = animation.CreateFirst());
                     }
                     else
                     {
@@ -509,24 +511,24 @@ namespace WpfAnimatedGif
             }
         }
 
-        private static DelayFrameAnimation GetAnimation(Image imageControl, BitmapSource source)
+        private static RendererAnimation GetAnimation(Image imageControl, BitmapSource source)
         {
             var cacheEntry = AnimationCache.Get(source);
             if (cacheEntry == null)
             {
-                if (DelayFrameCollection.TryCreate(source, imageControl, out var collection))
+                if (FrameRenderer.TryCreate(source, imageControl, out var renderer))
                 {
-                    cacheEntry = new AnimationCacheEntry(collection, collection.Duration, collection.RepeatCount);
+                    cacheEntry = new AnimationCacheEntry(renderer);
                     AnimationCache.Add(source, cacheEntry);
                 }
             }
 
             if (cacheEntry != null)
             {
-                var animation = new DelayFrameAnimation(cacheEntry.KeyFrames)
+                var animation = new RendererAnimation(cacheEntry.Renderer.Clone())
                 {
-                    RepeatBehavior = GetActualRepeatBehavior(imageControl, cacheEntry.RepeatCountFromMetadata),
-                    SpeedRatio = GetActualSpeedRatio(imageControl, cacheEntry.Duration)
+                    RepeatBehavior = GetActualRepeatBehavior(imageControl, cacheEntry.Renderer.RepeatCount),
+                    SpeedRatio = GetActualSpeedRatio(imageControl, cacheEntry.Renderer.Duration)
                 };
 
                 AnimationCache.AddControlForSource(source, imageControl);

@@ -17,6 +17,7 @@ namespace WpfAnimatedGif.Formats.Gif
             return imgData;
         }
 
+        private byte[] _decompressData;
 
         public int TotalPixels { get; set; }
         public byte LzwMinimumCodeSize { get; set; }

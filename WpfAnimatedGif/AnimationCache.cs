@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using WpfAnimatedGif.Formats;
 
 namespace WpfAnimatedGif
 {
@@ -147,15 +148,11 @@ namespace WpfAnimatedGif
 
     internal class AnimationCacheEntry
     {
-        public AnimationCacheEntry(DelayFrameCollection keyFrames, Duration duration, int repeatCountFromMetadata)
+        public AnimationCacheEntry(FrameRenderer renderer)
         {
-            KeyFrames = keyFrames;
-            Duration = duration;
-            RepeatCountFromMetadata = repeatCountFromMetadata;
+            Renderer = renderer;
         }
 
-        public DelayFrameCollection KeyFrames { get; }
-        public Duration Duration { get; }
-        public int RepeatCountFromMetadata { get; }
+        public FrameRenderer Renderer { get; }
     }
 }

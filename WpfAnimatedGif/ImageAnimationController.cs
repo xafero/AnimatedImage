@@ -11,26 +11,21 @@ namespace WpfAnimatedGif
     /// </summary>
     public class ImageAnimationController : IDisposable
     {
-        private static readonly DependencyPropertyDescriptor _sourceDescriptor;
-
-        static ImageAnimationController()
-        {
-            _sourceDescriptor = DependencyPropertyDescriptor.FromProperty(Image.SourceProperty, typeof(Image));
-        }
-
         private readonly Image _image;
-        private readonly DelayFrameAnimation _animation;
+        private readonly RendererAnimation _animation;
         private readonly AnimationClock _clock;
         private readonly ClockController _clockController;
 
-        internal ImageAnimationController(Image image, DelayFrameAnimation animation, bool autoStart)
+        internal ImageAnimationController(Image image, RendererAnimation animation, bool autoStart)
         {
             _image = image;
             _animation = animation;
+            _animation.CurrentIndexUpdated += OnCurrentFrameChanged;
             _animation.Completed += AnimationCompleted;
             _clock = _animation.CreateClock();
             _clockController = _clock.Controller;
-            _sourceDescriptor.AddValueChanged(image, ImageSourceChanged);
+            
+
 
             // ReSharper disable once PossibleNullReferenceException
             _clockController.Pause();
@@ -47,17 +42,12 @@ namespace WpfAnimatedGif
             _image.RaiseEvent(new System.Windows.RoutedEventArgs(ImageBehavior.AnimationCompletedEvent, _image));
         }
 
-        private void ImageSourceChanged(object sender, EventArgs e)
-        {
-            OnCurrentFrameChanged();
-        }
-
         /// <summary>
         /// Returns the number of frames in the image.
         /// </summary>
         public int FrameCount
         {
-            get { return _animation.KeyFrames.Count; }
+            get { return _animation.Count; }
         }
 
         /// <summary>
@@ -92,8 +82,8 @@ namespace WpfAnimatedGif
         /// <param name="index">The index of the frame to seek to</param>
         public void GotoFrame(int index)
         {
-            var frame = _animation.KeyFrames[index];
-            _clockController.Seek(frame.StartTime, TimeSeekOrigin.BeginTime);
+            var startTime= _animation.GetStartTime(index);
+            _clockController.Seek(startTime, TimeSeekOrigin.BeginTime);
         }
 
         /// <summary>
@@ -103,14 +93,7 @@ namespace WpfAnimatedGif
         {
             get
             {
-                var time = _clock.CurrentTime;
-                var frameAndIndex =
-                    _animation.KeyFrames
-                              .Select((f, i) => new { Time = f.StartTime, Index = i })
-                              .FirstOrDefault(fi => fi.Time >= time);
-                if (frameAndIndex != null)
-                    return frameAndIndex.Index;
-                return -1;
+                return _animation.CurrentIndex;
             }
         }
 
@@ -192,7 +175,7 @@ namespace WpfAnimatedGif
             {
                 _image.BeginAnimation(Image.SourceProperty, null);
                 _animation.Completed -= AnimationCompleted;
-                _sourceDescriptor.RemoveValueChanged(_image, ImageSourceChanged);
+                _animation.CurrentIndexUpdated -= OnCurrentFrameChanged;
                 _image.Source = null;
             }
         }
