@@ -3,8 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>net462;netcoreapp3.1</TargetFrameworks>
     <UseWPF>true</UseWPF>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>WpfAnimatedGif.snk</AssemblyOriginatorKeyFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <LangVersion>10</LangVersion>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
@@ -19,6 +17,9 @@
     <PackageReleaseNotes>https://github.com/XamlAnimatedGif/WpfAnimatedGif/releases</PackageReleaseNotes>
     <PackageTags>wpf;animated;gif</PackageTags>
   </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="AnimatedGif.Test" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="SharpCompress">
       <Version>0.33.0</Version>

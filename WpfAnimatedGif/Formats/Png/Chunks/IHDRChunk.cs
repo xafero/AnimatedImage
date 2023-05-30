@@ -40,6 +40,40 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
 
         public InterlaceMethod InterlaceMethod { get; private set; }
 
+        public bool IsValidHeader
+        {
+            get
+            {
+                if (!IsValid(CompressionMethod))
+                    return false;
+
+                if (!IsValid(ColorType))
+                    return false;
+
+                if (!IsValid(CompressionMethod))
+                    return false;
+
+                if (!IsValid(FilterMethod))
+                    return false;
+
+                if (!IsValid(InterlaceMethod))
+                    return false;
+
+                // ColorType & BitDepth combination
+                if (!IsValidBitDepth)
+                    return false;
+
+                return true;
+
+                static bool IsValid<T>(T val) where T : Enum
+                {
+                    return Enum.GetValues(typeof(T))
+                               .Cast<T>()
+                               .Any(v => Equals(v, val));
+                }
+            }
+        }
+
         public bool IsValidBitDepth
         {
             get
@@ -61,8 +95,7 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
                         break;
 
                     default:
-                        allowDepths = new byte[0];
-                        break;
+                        return false;
                 };
 
                 return allowDepths.Any(b => b == BitDepth);

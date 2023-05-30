@@ -192,3 +192,5 @@ NDependOut/
 
 issues/
 artifacts/
+
+*.received.png

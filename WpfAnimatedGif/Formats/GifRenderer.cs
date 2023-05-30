@@ -100,7 +100,7 @@ namespace WpfAnimatedGif.Formats
             if (_frameIndex > frameIndex)
             {
                 Clear(_bitmap, 0, 0, Width, Height);
-                _frameIndex = 0;
+                _frameIndex = -1;
                 _previouns = null;
                 _background = null;
             }
@@ -123,12 +123,15 @@ namespace WpfAnimatedGif.Formats
 
             // render intermediate frames
 
-            for (var fidx = Math.Max(_frameIndex, 0); fidx < frameIndex; ++fidx)
+            for (var fidx = _frameIndex + 1; fidx < frameIndex; ++fidx)
             {
                 var prevFrame = _frames[fidx];
 
                 if (prevFrame.DisposalMethod == FrameDisposalMethod.RestorePrevious)
+                {
+                    _background = null;
                     continue;
+                }
 
                 if (prevFrame.DisposalMethod == FrameDisposalMethod.RestoreBackground)
                 {
@@ -146,6 +149,7 @@ namespace WpfAnimatedGif.Formats
                 }
 
                 prevFrame.Render(_bitmap, _work, null);
+                _background = null;
             }
 
 

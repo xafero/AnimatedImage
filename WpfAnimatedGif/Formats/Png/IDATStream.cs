@@ -27,8 +27,7 @@ namespace WpfAnimatedGif.Formats.Png
             PLTEChunk palette = file.PLTEChunk;
             tRNSChunk transparency = file.tRNSChunk;
 
-            //var mem = new MultiMemoryStream(frame.IDATChunks.Select(chunk => chunk.ChunkData));
-            var mem = new MemoryStream(frame.IDATChunks.Select(chunk => chunk.ChunkData).First());
+            var mem = new MultiMemoryStream(frame.IDATChunks.Select(chunk => chunk.ChunkData));
             _buffer = ByteBuffer.Create(mem, header.BitDepth);
 
             _dimension = header.ColorType switch

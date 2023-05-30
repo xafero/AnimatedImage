@@ -13,7 +13,7 @@ namespace WpfAnimatedGif.Formats
     internal class PngRenderer : FrameRenderer
     {
         private APNG _file;
-        private int _frameIndex;
+        private int _frameIndex = -1;
         private WriteableBitmap _bitmap;
         private Frame[] _frames;
 
@@ -34,10 +34,6 @@ namespace WpfAnimatedGif.Formats
             Height = file.IHDRChunk.Height;
             _bitmap = new WriteableBitmap(Width, Height, 96, 96, PixelFormats.Pbgra32, null);
             _work = new byte[Width * Height * 4];
-
-
-
-
 
             var frames = new List<Frame>();
             var span = TimeSpan.Zero;
@@ -103,6 +99,18 @@ namespace WpfAnimatedGif.Formats
         {
             if (_frameIndex == frameIndex)
                 return;
+
+            // increment
+            for (; ; )
+            {
+                var frm = _frames[frameIndex];
+                if (frm.Begin == frm.End && frameIndex + 1 < _frames.Length)
+                {
+                    ++frameIndex;
+                    continue;
+                }
+                break;
+            }
 
             if (_frameIndex > frameIndex)
             {
@@ -413,10 +421,10 @@ namespace WpfAnimatedGif.Formats
                             }
                             else
                             {
-                                work[workIdx] = (byte)((alpha * b + (256 - alpha) * work[workIdx]) >> 8); ++workIdx;
-                                work[workIdx] = (byte)((alpha * g + (256 - alpha) * work[workIdx]) >> 8); ++workIdx;
-                                work[workIdx] = (byte)((alpha * r + (256 - alpha) * work[workIdx]) >> 8); ++workIdx;
-                                work[workIdx] = alpha;
+                                work[workIdx] = ComputeColorScale(alpha, b, work[workIdx]); ++workIdx;
+                                work[workIdx] = ComputeColorScale(alpha, g, work[workIdx]); ++workIdx;
+                                work[workIdx] = ComputeColorScale(alpha, r, work[workIdx]); ++workIdx;
+                                work[workIdx] = ComputeAlphaScale(alpha, work[workIdx]);
                                 ++workIdx;
                             }
                         }
@@ -426,6 +434,20 @@ namespace WpfAnimatedGif.Formats
                 bitmap.WritePixels(Bounds, work, 4 * Bounds.Width, 0);
 
                 _data.Reset();
+            }
+
+            static byte ComputeColorScale(byte sa, byte sv, byte dv)
+            {
+                var val = sa * sv + (255 - sa) * dv;
+                val = (val * 2 + 255) / 255 / 2;
+                return (byte)val;
+            }
+
+            static byte ComputeAlphaScale(byte sa, byte dv)
+            {
+                // work[workIdx] = (byte)(alpha + work[workIdx] * (255 - alpha) / 255);
+                var val = ((255 - sa) * dv * 2 + 255) / 255 / 2;
+                return (byte)(sa + val);
             }
         }
 
