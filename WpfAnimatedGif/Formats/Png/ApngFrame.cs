@@ -11,12 +11,12 @@ namespace WpfAnimatedGif.Formats.Png
     /// <summary>
     ///     Describe a single frame.
     /// </summary>
-    public class Frame
+    internal class ApngFrame
     {
         public static readonly byte[] Signature = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 
         private List<IDATChunk> idatChunks = new List<IDATChunk>();
-        private List<OtherChunk> otherChunks = new List<OtherChunk>();
+        private List<Chunk> otherChunks = new List<Chunk>();
 
         /// <summary>
         ///     Gets or Sets the acTL chunk
@@ -36,7 +36,7 @@ namespace WpfAnimatedGif.Formats.Png
         /// <summary>
         ///     Gets or Sets the other chunks
         /// </summary>
-        public List<OtherChunk> OtherChunks
+        public List<Chunk> OtherChunks
         {
             get { return otherChunks; }
             set { otherChunks = value; }
@@ -54,7 +54,7 @@ namespace WpfAnimatedGif.Formats.Png
         /// <summary>
         ///     Add an Chunk to end end of existing list.
         /// </summary>
-        public void AddOtherChunk(OtherChunk chunk)
+        public void AddOtherChunk(Chunk chunk)
         {
             otherChunks.Add(chunk);
         }
@@ -70,28 +70,28 @@ namespace WpfAnimatedGif.Formats.Png
         /// <summary>
         ///     Gets the frame as PNG FileStream.
         /// </summary>
-        public MemoryStream GetStream()
-        {
-            var ihdrChunk = new IHDRChunk(IHDRChunk);
-            if (fcTLChunk != null)
-            {
-                // Fix frame size with fcTL data.
-                ihdrChunk.ModifyChunkData(0, Helper.ConvertEndian(fcTLChunk.Width));
-                ihdrChunk.ModifyChunkData(4, Helper.ConvertEndian(fcTLChunk.Height));
-            }
-
-            // Write image data
-            using (var ms = new MemoryStream())
-            {
-                ms.WriteBytes(Signature);
-                ms.WriteBytes(ihdrChunk.RawData);
-                otherChunks.ForEach(o => ms.WriteBytes(o.RawData));
-                idatChunks.ForEach(i => ms.WriteBytes(i.RawData));
-                ms.WriteBytes(IENDChunk.RawData);
-
-                ms.Position = 0;
-                return ms;
-            }
-        }
+        //        public MemoryStream GetStream()
+        //        {
+        //            var ihdrChunk = new IHDRChunk(IHDRChunk);
+        //            if (fcTLChunk != null)
+        //            {
+        //                // Fix frame size with fcTL data.
+        //                ihdrChunk.ModifyChunkData(0, Helper.ConvertEndian(fcTLChunk.Width));
+        //                ihdrChunk.ModifyChunkData(4, Helper.ConvertEndian(fcTLChunk.Height));
+        //            }
+        //
+        //            // Write image data
+        //            using (var ms = new MemoryStream())
+        //            {
+        //                ms.WriteBytes(Signature);
+        //                ms.WriteBytes(ihdrChunk.RawData);
+        //                otherChunks.ForEach(o => ms.WriteBytes(o.RawData));
+        //                idatChunks.ForEach(i => ms.WriteBytes(i.RawData));
+        //                ms.WriteBytes(IENDChunk.RawData);
+        //
+        //                ms.Position = 0;
+        //                return ms;
+        //            }
+        //        }
     }
 }

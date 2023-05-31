@@ -6,21 +6,12 @@ using System.IO;
 
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
-    public class IENDChunk : Chunk
+    internal class IENDChunk
     {
-        public IENDChunk(byte[] bytes)
-            : base(bytes)
+        internal IENDChunk(ChunkStream cs)
         {
+            cs.ReadCrc();
         }
 
-        public IENDChunk(MemoryStream ms)
-            : base(ms)
-        {
-        }
-
-        public IENDChunk(Chunk chunk)
-            : base(chunk)
-        {
-        }
     }
 }

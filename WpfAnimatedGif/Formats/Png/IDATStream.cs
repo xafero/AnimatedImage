@@ -1,5 +1,11 @@
-﻿using SharpCompress.Compressors;
+﻿#if NET6_0_OR_GREATER
+using System.IO.Compression;
+using ZlibStream = System.IO.Compression.ZLibStream;
+#else
+using SharpCompress.Compressors;
 using SharpCompress.Compressors.Deflate;
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,14 +26,14 @@ namespace WpfAnimatedGif.Formats.Png
         public int Stride { get; }
 
         public IDATStream(
-            APNG file,
-            Frame frame)
+            ApngFile file,
+            ApngFrame frame)
         {
             IHDRChunk header = file.IHDRChunk;
             PLTEChunk palette = file.PLTEChunk;
             tRNSChunk transparency = file.tRNSChunk;
 
-            var mem = new MultiMemoryStream(frame.IDATChunks.Select(chunk => chunk.ChunkData));
+            var mem = new MultiMemoryStream(frame.IDATChunks.Select(chunk => chunk.FrameData));
             _buffer = ByteBuffer.Create(mem, header.BitDepth);
 
             _dimension = header.ColorType switch
@@ -140,6 +146,7 @@ namespace WpfAnimatedGif.Formats.Png
 
             public ByteBuffer(Stream stream)
             {
+
                 _memoryStream = stream;
                 _stream = new ZlibStream(_memoryStream, CompressionMode.Decompress);
 

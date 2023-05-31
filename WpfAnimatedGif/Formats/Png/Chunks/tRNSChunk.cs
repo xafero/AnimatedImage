@@ -7,33 +7,20 @@ using System.Threading.Tasks;
 
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
-    public abstract class tRNSChunk : Chunk
+    internal abstract class tRNSChunk
     {
-        public tRNSChunk(byte[] bytes)
-            : base(bytes)
-        { }
-
-        public tRNSChunk(MemoryStream ms)
-            : base(ms)
-        { }
-
-        public tRNSChunk(Chunk chunk)
-            : base(chunk)
-        { }
-
-
-        public static tRNSChunk Create(IHDRChunk ihdr, Chunk chunk)
+        internal static tRNSChunk Create(IHDRChunk ihdr, ChunkStream cs)
         {
             switch (ihdr.ColorType)
             {
                 case Types.ColorType.Glayscale:
-                    return new tRNSGrayscaleChunk(chunk);
+                    return new tRNSGrayscaleChunk(cs);
 
                 case Types.ColorType.Color:
-                    return new tRNSColorChunk(chunk);
+                    return new tRNSColorChunk(cs);
 
                 case Types.ColorType.IndexedColor:
-                    return new tRNSIndexChunk(chunk);
+                    return new tRNSIndexChunk(cs);
 
 
                 default:
@@ -42,34 +29,28 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
         }
     }
 
-    public class tRNSGrayscaleChunk : tRNSChunk
+    internal class tRNSGrayscaleChunk : tRNSChunk
     {
         public ushort[] AlphaForEachGrayLevel { private set; get; }
 
-        public tRNSGrayscaleChunk(Chunk chunk) : base(chunk)
-        { }
-
-        protected override void ParseData(MemoryStream ms)
+        internal tRNSGrayscaleChunk(ChunkStream cs)
         {
-            AlphaForEachGrayLevel = new ushort[Length / 2];
+            AlphaForEachGrayLevel = new ushort[cs.Length / 2];
 
             for (var i = 0; i < AlphaForEachGrayLevel.Length; i++)
             {
-                AlphaForEachGrayLevel[i] = Helper.ConvertEndian(ms.ReadUInt16());
+                AlphaForEachGrayLevel[i] = cs.ReadUInt16();
             }
         }
     }
 
-    public class tRNSColorChunk : tRNSChunk
+    internal class tRNSColorChunk : tRNSChunk
     {
         public PngColor[] TransparencyColors { private set; get; }
 
-        public tRNSColorChunk(Chunk chunk) : base(chunk)
-        { }
-
-        protected override void ParseData(MemoryStream ms)
+        internal tRNSColorChunk(ChunkStream cs)
         {
-            TransparencyColors = new PngColor[Length / 3 / 2];
+            TransparencyColors = new PngColor[cs.Length / 3 / 2];
 
             for (var i = 0; i < TransparencyColors.Length; i++)
             {
@@ -80,27 +61,24 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
 
                 TransparencyColors[i] =
                     new PngColor(
-                        (byte)(Helper.ConvertEndian(ms.ReadUInt16()) >> 8),
-                        (byte)(Helper.ConvertEndian(ms.ReadUInt16()) >> 8),
-                        (byte)(Helper.ConvertEndian(ms.ReadUInt16()) >> 8));
+                        (byte)(cs.ReadUInt16() >> 8),
+                        (byte)(cs.ReadUInt16() >> 8),
+                        (byte)(cs.ReadUInt16() >> 8));
             }
         }
     }
 
-    public class tRNSIndexChunk : tRNSChunk
+    internal class tRNSIndexChunk : tRNSChunk
     {
         public byte[] AlphaForEachIndex { private set; get; }
 
-        public tRNSIndexChunk(Chunk chunk) : base(chunk)
-        { }
-
-        protected override void ParseData(MemoryStream ms)
+        internal tRNSIndexChunk(ChunkStream cs)
         {
-            AlphaForEachIndex = new byte[Length];
+            AlphaForEachIndex = new byte[cs.Length];
 
-            for (var i = 0; i < Length; i++)
+            for (var i = 0; i < cs.Length; i++)
             {
-                AlphaForEachIndex[i] = (byte)ms.ReadByte();
+                AlphaForEachIndex[i] = (byte)cs.ReadByte();
             }
         }
     }

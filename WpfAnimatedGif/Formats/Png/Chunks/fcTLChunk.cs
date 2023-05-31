@@ -2,41 +2,32 @@
 // Licensed under the MIT License.
 // Ported from: https://github.com/xupefei/APNG.NET
 
+using System;
+using System.Drawing;
 using System.IO;
+using System.Windows.Controls;
+using WpfAnimatedGif.Formats.Png.Types;
 
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
-    public enum DisposeOps
-    {
-        APNGDisposeOpNone = 0,
-        APNGDisposeOpBackground = 1,
-        APNGDisposeOpPrevious = 2,
-    }
-
-    public enum BlendOps
-    {
-        APNGBlendOpSource = 0,
-        APNGBlendOpOver = 1,
-    }
 
     /// <summary>
     /// Frame Copntrol Chunk
     /// </summary>
-    public class fcTLChunk : Chunk
+    internal class fcTLChunk
     {
-        public fcTLChunk(byte[] bytes)
-            : base(bytes)
+        internal fcTLChunk(ChunkStream cs)
         {
-        }
-
-        public fcTLChunk(MemoryStream ms)
-            : base(ms)
-        {
-        }
-
-        public fcTLChunk(Chunk chunk)
-            : base(chunk)
-        {
+            SequenceNumber = cs.ReadUInt32();
+            Width = cs.ReadUInt32();
+            Height = cs.ReadUInt32();
+            XOffset = cs.ReadUInt32();
+            YOffset = cs.ReadUInt32();
+            DelayNum = cs.ReadUInt16();
+            DelayDen = cs.ReadUInt16();
+            DisposeOp = (DisposeOps)cs.ReadByte();
+            BlendOp = (BlendOps)cs.ReadByte();
+            cs.ReadCrc();
         }
 
         /// <summary>
@@ -84,17 +75,13 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
         /// </summary>
         public BlendOps BlendOp { get; private set; }
 
-        protected override void ParseData(MemoryStream ms)
+        /// <summary>
+        ///     Compute delay time from DelayNum and DlayDen
+        /// </summary>
+        public TimeSpan ComputeDelay()
         {
-            SequenceNumber = Helper.ConvertEndian(ms.ReadUInt32());
-            Width = Helper.ConvertEndian(ms.ReadUInt32());
-            Height = Helper.ConvertEndian(ms.ReadUInt32());
-            XOffset = Helper.ConvertEndian(ms.ReadUInt32());
-            YOffset = Helper.ConvertEndian(ms.ReadUInt32());
-            DelayNum = Helper.ConvertEndian(ms.ReadUInt16());
-            DelayDen = Helper.ConvertEndian(ms.ReadUInt16());
-            DisposeOp = (DisposeOps)ms.ReadByte();
-            BlendOp = (BlendOps)ms.ReadByte();
+            int deno = DelayDen == 0 ? 100 : DelayDen;
+            return TimeSpan.FromSeconds(DelayNum / (double)deno);
         }
     }
 }

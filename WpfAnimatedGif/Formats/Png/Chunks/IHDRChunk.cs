@@ -9,21 +9,18 @@ using WpfAnimatedGif.Formats.Png.Types;
 
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
-    public class IHDRChunk : Chunk
+    internal class IHDRChunk
     {
-        public IHDRChunk(byte[] chunkBytes)
-            : base(chunkBytes)
+        internal IHDRChunk(ChunkStream cs)
         {
-        }
-
-        public IHDRChunk(Stream stream)
-            : base(stream)
-        {
-        }
-
-        public IHDRChunk(Chunk chunk)
-            : base(chunk)
-        {
+            Width = cs.ReadInt32();
+            Height = cs.ReadInt32();
+            BitDepth = cs.ReadByte();
+            ColorType = (ColorType)Convert.ToByte(cs.ReadByte());
+            CompressionMethod = (CompressionMethod)Convert.ToByte(cs.ReadByte());
+            FilterMethod = (FilterMethod)Convert.ToByte(cs.ReadByte());
+            InterlaceMethod = (InterlaceMethod)Convert.ToByte(cs.ReadByte());
+            cs.ReadCrc();
         }
 
         public int Width { get; private set; }
@@ -100,17 +97,6 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
 
                 return allowDepths.Any(b => b == BitDepth);
             }
-        }
-
-        protected override void ParseData(MemoryStream ms)
-        {
-            Width = Helper.ConvertEndian(ms.ReadInt32());
-            Height = Helper.ConvertEndian(ms.ReadInt32());
-            BitDepth = Convert.ToByte(ms.ReadByte());
-            ColorType = (ColorType)Convert.ToByte(ms.ReadByte());
-            CompressionMethod = (CompressionMethod)Convert.ToByte(ms.ReadByte());
-            FilterMethod = (FilterMethod)Convert.ToByte(ms.ReadByte());
-            InterlaceMethod = (InterlaceMethod)Convert.ToByte(ms.ReadByte());
         }
     }
 }

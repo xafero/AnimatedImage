@@ -12,22 +12,22 @@ namespace WpfAnimatedGif.Formats
 {
     internal class PngRenderer : FrameRenderer
     {
-        private APNG _file;
+        private ApngFile _file;
         private int _frameIndex = -1;
         private WriteableBitmap _bitmap;
-        private Frame[] _frames;
+        private PngRendererFrame[] _frames;
 
         private byte[] _work;
 
         // variables for RestorePrevious
         private byte[] _restorePixels;
-        private Frame _previouns;
+        private PngRendererFrame _previouns;
 
         // variables for RestoreBackground
-        private Frame _background;
+        private FrameRenderFrame _background;
+        private readonly FrameRenderFrame _fullFrame;
 
-
-        public PngRenderer(APNG file)
+        public PngRenderer(ApngFile file)
         {
             _file = file;
             Width = file.IHDRChunk.Width;
@@ -35,11 +35,11 @@ namespace WpfAnimatedGif.Formats
             _bitmap = new WriteableBitmap(Width, Height, 96, 96, PixelFormats.Pbgra32, null);
             _work = new byte[Width * Height * 4];
 
-            var frames = new List<Frame>();
+            var frames = new List<PngRendererFrame>();
             var span = TimeSpan.Zero;
             foreach (var pngfrm in file.Frames)
             {
-                Frame frame = file.IHDRChunk.ColorType switch
+                PngRendererFrame frame = file.IHDRChunk.ColorType switch
                 {
                     ColorType.Glayscale => new GrayscaleFrame(file, pngfrm, span),
                     ColorType.GlayscaleAlpha => new GrayscaleFrame(file, pngfrm, span),
@@ -62,11 +62,13 @@ namespace WpfAnimatedGif.Formats
 
         public override int CurrentIndex => _frameIndex;
 
-        public override int Count => _file.Frames.Length;
+        public override int FrameCount => _file.Frames.Length;
 
         public override WriteableBitmap Current => _bitmap;
 
         public override int RepeatCount { get; }
+
+        protected override FrameRenderFrame this[int idx] => _frames[idx];
 
         public override TimeSpan Duration { get; }
 
@@ -76,24 +78,6 @@ namespace WpfAnimatedGif.Formats
         }
 
         public override TimeSpan GetStartTime(int idx) => _frames[idx].Begin;
-
-        public override void ProcessFrame(TimeSpan timespan)
-        {
-            while (timespan > Duration)
-            {
-                timespan -= Duration;
-            }
-
-            for (var frameIdx = 0; frameIdx < _frames.Length; ++frameIdx)
-            {
-                var frame = _frames[frameIdx];
-                if (frame.Begin <= timespan && timespan < frame.End)
-                {
-                    ProcessFrame(frameIdx);
-                    return;
-                }
-            }
-        }
 
         public override void ProcessFrame(int frameIndex)
         {
@@ -200,357 +184,336 @@ namespace WpfAnimatedGif.Formats
                         width * 4,
                         0);
         }
+    }
 
+    internal abstract class PngRendererFrame : FrameRenderFrame
+    {
+        public DisposeOps DisposalMethod { get; }
+        public BlendOps BlendMethod { get; }
 
-        internal abstract class Frame
+        protected PngRendererFrame(Png.ApngFrame frame, TimeSpan begin) :
+            base(
+                (int)frame.fcTLChunk.XOffset,
+                (int)frame.fcTLChunk.YOffset,
+                (int)frame.fcTLChunk.Width,
+                (int)frame.fcTLChunk.Height,
+                begin,
+                begin + frame.fcTLChunk.ComputeDelay())
         {
-            public TimeSpan Begin { get; }
-            public TimeSpan End { get; }
-            public DisposeOps DisposalMethod { get; }
-            public BlendOps BlendMethod { get; }
-            public Int32Rect Bounds { get; }
-            public int X => Bounds.X;
-            public int Y => Bounds.Y;
-            public int Width => Bounds.Width;
-            public int Height => Bounds.Height;
-
-            protected Frame(Png.Frame frame, TimeSpan begin)
-            {
-                int deno = frame.fcTLChunk.DelayDen == 0 ? 100 : frame.fcTLChunk.DelayDen;
-
-                Begin = begin;
-                End = begin + TimeSpan.FromSeconds(frame.fcTLChunk.DelayNum / (double)deno);
-
-                Bounds = new Int32Rect(
-                            (int)frame.fcTLChunk.XOffset,
-                            (int)frame.fcTLChunk.YOffset,
-                            (int)frame.fcTLChunk.Width,
-                            (int)frame.fcTLChunk.Height);
-
-                DisposalMethod = frame.fcTLChunk.DisposeOp;
-                BlendMethod = frame.fcTLChunk.BlendOp;
-            }
-
-
-            public bool IsInvolve(Frame frame)
-            {
-                return X <= frame.X
-                    && Y <= frame.Y
-                    && (frame.X + frame.Width) <= (X + Width)
-                    && (frame.Y + frame.Height) <= (Y + Height);
-            }
-
-            public abstract void Render(WriteableBitmap bitmap, byte[] work, byte[] backup);
+            DisposalMethod = frame.fcTLChunk.DisposeOp;
+            BlendMethod = frame.fcTLChunk.BlendOp;
         }
 
-        internal class GrayscaleFrame : Frame
+        public abstract void Render(WriteableBitmap bitmap, byte[] work, byte[] backup);
+    }
+
+    internal class GrayscaleFrame : PngRendererFrame
+    {
+        private static readonly byte[] s_scle1 = { 0, 255 };
+        private static readonly byte[] s_scle2 = Enumerable.Range(0, 4).Select(i => (byte)(i * 255 / 3)).ToArray();
+        private static readonly byte[] s_scle4 = Enumerable.Range(0, 16).Select(i => (byte)(i * 255 / 15)).ToArray();
+        private static readonly byte[] s_scle8 = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
+
+        private readonly IDATStream _data;
+        private readonly bool _hasAlpha;
+        private readonly byte[] _alphaLevel;
+        private readonly byte[] _line;
+        private readonly byte[] _scale;
+
+        public GrayscaleFrame(ApngFile file, Png.ApngFrame frame, TimeSpan begin) : base(frame, begin)
         {
-            private static readonly byte[] s_scle1 = { 0, 255 };
-            private static readonly byte[] s_scle2 = Enumerable.Range(0, 4).Select(i => (byte)(i * 255 / 3)).ToArray();
-            private static readonly byte[] s_scle4 = Enumerable.Range(0, 16).Select(i => (byte)(i * 255 / 15)).ToArray();
-            private static readonly byte[] s_scle8 = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
+            _data = new IDATStream(file, frame);
 
-            private readonly IDATStream _data;
-            private readonly bool _hasAlpha;
-            private readonly byte[] _alphaLevel;
-            private readonly byte[] _line;
-            private readonly byte[] _scale;
-
-            public GrayscaleFrame(APNG file, Png.Frame frame, TimeSpan begin) : base(frame, begin)
+            if (file.tRNSChunk is null)
             {
-                _data = new IDATStream(file, frame);
-
-                if (file.tRNSChunk is null)
-                {
-                    _alphaLevel = new byte[256];
-                    for (var i = 0; i < _alphaLevel.Length; ++i)
-                        _alphaLevel[i] = 255;
-                }
-                else
-                {
-                    var trns = (tRNSGrayscaleChunk)file.tRNSChunk;
-                    _alphaLevel = trns.AlphaForEachGrayLevel.Select(s => (byte)(s >> 8)).ToArray();
-                }
-
-                _line = new byte[_data.Stride];
-                _hasAlpha = file.IHDRChunk.ColorType == ColorType.GlayscaleAlpha;
-
-                _scale = file.IHDRChunk.BitDepth switch
-                {
-                    1 => s_scle1,
-                    2 => s_scle2,
-                    4 => s_scle4,
-                    8 => s_scle8,
-                    16 => s_scle8,
-                    _ => throw new ArgumentException()
-                };
+                _alphaLevel = new byte[256];
+                for (var i = 0; i < _alphaLevel.Length; ++i)
+                    _alphaLevel[i] = 255;
+            }
+            else
+            {
+                var trns = (tRNSGrayscaleChunk)file.tRNSChunk;
+                _alphaLevel = trns.AlphaForEachGrayLevel.Select(s => (byte)(s >> 8)).ToArray();
             }
 
-            public override void Render(WriteableBitmap bitmap, byte[] work, byte[] backup)
+            _line = new byte[_data.Stride];
+            _hasAlpha = file.IHDRChunk.ColorType == ColorType.GlayscaleAlpha;
+
+            _scale = file.IHDRChunk.BitDepth switch
             {
-                bitmap.CopyPixels(Bounds, work, 4 * Bounds.Width, 0);
+                1 => s_scle1,
+                2 => s_scle2,
+                4 => s_scle4,
+                8 => s_scle8,
+                16 => s_scle8,
+                _ => throw new ArgumentException()
+            };
+        }
 
-                if (backup != null)
+        public override void Render(WriteableBitmap bitmap, byte[] work, byte[] backup)
+        {
+            bitmap.CopyPixels(Bounds, work, 4 * Bounds.Width, 0);
+
+            if (backup != null)
+            {
+                Array.Copy(work, backup, Width * Height * 4);
+            }
+
+            for (var i = 0; i < Height; ++i)
+            {
+                _data.DecompressLine(_line, 0, _line.Length);
+
+                int j1 = 0;
+                for (var j2 = 0; j2 < Width * 4;)
                 {
-                    Array.Copy(work, backup, Width * Height * 4);
-                }
+                    var val = _line[j1++];
+                    var alpha = _hasAlpha ? _line[j1++] : _alphaLevel[val];
 
-                for (var i = 0; i < Height; ++i)
-                {
-                    _data.DecompressLine(_line, 0, _line.Length);
+                    var scl = _scale[val];
 
-                    int j1 = 0;
-                    for (var j2 = 0; j2 < Width * 4;)
+                    if (BlendMethod == BlendOps.APNGBlendOpSource)
                     {
-                        var val = _line[j1++];
-                        var alpha = _hasAlpha ? _line[j1++] : _alphaLevel[val];
+                        work[j2++] = scl;
+                        work[j2++] = scl;
+                        work[j2++] = scl;
+                        work[j2++] = alpha;
+                    }
+                    else if (BlendMethod == BlendOps.APNGBlendOpOver)
+                    {
 
-                        var scl = _scale[val];
-
-                        if (BlendMethod == BlendOps.APNGBlendOpSource)
+                        if (alpha == 0)
+                        {
+                            j2 += 4;
+                            continue;
+                        }
+                        else if (alpha == 0xFF)
                         {
                             work[j2++] = scl;
                             work[j2++] = scl;
                             work[j2++] = scl;
                             work[j2++] = alpha;
                         }
-                        else if (BlendMethod == BlendOps.APNGBlendOpOver)
+                        else
                         {
-
-                            if (alpha == 0)
-                            {
-                                j2 += 4;
-                                continue;
-                            }
-                            else if (alpha == 0xFF)
-                            {
-                                work[j2++] = scl;
-                                work[j2++] = scl;
-                                work[j2++] = scl;
-                                work[j2++] = alpha;
-                            }
-                            else
-                            {
-                                work[j2] = (byte)((alpha * scl + (1 - alpha) * work[j2]) >> 8); ++j2;
-                                work[j2] = (byte)((alpha * scl + (1 - alpha) * work[j2]) >> 8); ++j2;
-                                work[j2] = (byte)((alpha * scl + (1 - alpha) * work[j2]) >> 8); ++j2;
-                                work[j2] = alpha;
-                                ++j2;
-                            }
+                            work[j2] = (byte)((alpha * scl + (1 - alpha) * work[j2]) >> 8); ++j2;
+                            work[j2] = (byte)((alpha * scl + (1 - alpha) * work[j2]) >> 8); ++j2;
+                            work[j2] = (byte)((alpha * scl + (1 - alpha) * work[j2]) >> 8); ++j2;
+                            work[j2] = alpha;
+                            ++j2;
                         }
                     }
                 }
-
-                bitmap.WritePixels(Bounds, work, 4 * Bounds.Width, 0);
-
-                _data.Reset();
             }
+
+            bitmap.WritePixels(Bounds, work, 4 * Bounds.Width, 0);
+
+            _data.Reset();
+        }
+    }
+
+    internal class ColorFrame : PngRendererFrame
+    {
+        private readonly IDATStream _data;
+        private readonly bool _hasAlpha;
+        private readonly HashSet<PngColor> _transparencyColor;
+        private readonly byte[] _line;
+
+        public ColorFrame(ApngFile file, Png.ApngFrame frame, TimeSpan begin) : base(frame, begin)
+        {
+            _data = new IDATStream(file, frame);
+
+
+            if (file.tRNSChunk is null)
+            {
+                _transparencyColor = new HashSet<PngColor>();
+            }
+            else
+            {
+                var trns = (tRNSColorChunk)file.tRNSChunk;
+                _transparencyColor = new HashSet<PngColor>(trns.TransparencyColors);
+            }
+
+            _line = new byte[_data.Stride];
+            _hasAlpha = file.IHDRChunk.ColorType == ColorType.ColorAlpha;
         }
 
-        internal class ColorFrame : Frame
+        public override void Render(WriteableBitmap bitmap, byte[] work, byte[] backup)
         {
-            private readonly IDATStream _data;
-            private readonly bool _hasAlpha;
-            private readonly HashSet<PngColor> _transparencyColor;
-            private readonly byte[] _line;
+            bitmap.CopyPixels(Bounds, work, 4 * Bounds.Width, 0);
 
-            public ColorFrame(APNG file, Png.Frame frame, TimeSpan begin) : base(frame, begin)
+            if (backup != null)
             {
-                _data = new IDATStream(file, frame);
-
-
-                if (file.tRNSChunk is null)
-                {
-                    _transparencyColor = new HashSet<PngColor>();
-                }
-                else
-                {
-                    var trns = (tRNSColorChunk)file.tRNSChunk;
-                    _transparencyColor = new HashSet<PngColor>(trns.TransparencyColors);
-                }
-
-                _line = new byte[_data.Stride];
-                _hasAlpha = file.IHDRChunk.ColorType == ColorType.ColorAlpha;
+                Array.Copy(work, backup, Width * Height * 4);
             }
 
-            public override void Render(WriteableBitmap bitmap, byte[] work, byte[] backup)
+            int workIdx = 0;
+            for (var i = 0; i < Height; ++i)
             {
-                bitmap.CopyPixels(Bounds, work, 4 * Bounds.Width, 0);
+                _data.DecompressLine(_line, 0, _line.Length);
 
-                if (backup != null)
+                int lineIdx = 0;
+                int workEdIdx = workIdx + Width * 4;
+                while (workIdx < workEdIdx)
                 {
-                    Array.Copy(work, backup, Width * Height * 4);
-                }
+                    var r = _line[lineIdx++];
+                    var g = _line[lineIdx++];
+                    var b = _line[lineIdx++];
+                    var alpha =
+                        _hasAlpha ? _line[lineIdx++] :
+                        _transparencyColor.Contains(new PngColor(r, g, b)) ? (byte)0 :
+                        (byte)255;
 
-                int workIdx = 0;
-                for (var i = 0; i < Height; ++i)
-                {
-                    _data.DecompressLine(_line, 0, _line.Length);
-
-                    int lineIdx = 0;
-                    int workEdIdx = workIdx + Width * 4;
-                    while (workIdx < workEdIdx)
+                    if (BlendMethod == BlendOps.APNGBlendOpSource)
                     {
-                        var r = _line[lineIdx++];
-                        var g = _line[lineIdx++];
-                        var b = _line[lineIdx++];
-                        var alpha =
-                            _hasAlpha ? _line[lineIdx++] :
-                            _transparencyColor.Contains(new PngColor(r, g, b)) ? (byte)0 :
-                            (byte)255;
-
-                        if (BlendMethod == BlendOps.APNGBlendOpSource)
+                        work[workIdx++] = b;
+                        work[workIdx++] = g;
+                        work[workIdx++] = r;
+                        work[workIdx++] = alpha;
+                    }
+                    else if (BlendMethod == BlendOps.APNGBlendOpOver)
+                    {
+                        if (alpha == 0)
+                        {
+                            workIdx += 4;
+                        }
+                        else if (alpha == 0xFF)
                         {
                             work[workIdx++] = b;
                             work[workIdx++] = g;
                             work[workIdx++] = r;
                             work[workIdx++] = alpha;
                         }
-                        else if (BlendMethod == BlendOps.APNGBlendOpOver)
+                        else
                         {
-                            if (alpha == 0)
-                            {
-                                workIdx += 4;
-                            }
-                            else if (alpha == 0xFF)
-                            {
-                                work[workIdx++] = b;
-                                work[workIdx++] = g;
-                                work[workIdx++] = r;
-                                work[workIdx++] = alpha;
-                            }
-                            else
-                            {
-                                work[workIdx] = ComputeColorScale(alpha, b, work[workIdx]); ++workIdx;
-                                work[workIdx] = ComputeColorScale(alpha, g, work[workIdx]); ++workIdx;
-                                work[workIdx] = ComputeColorScale(alpha, r, work[workIdx]); ++workIdx;
-                                work[workIdx] = ComputeAlphaScale(alpha, work[workIdx]);
-                                ++workIdx;
-                            }
+                            work[workIdx] = ComputeColorScale(alpha, b, work[workIdx]); ++workIdx;
+                            work[workIdx] = ComputeColorScale(alpha, g, work[workIdx]); ++workIdx;
+                            work[workIdx] = ComputeColorScale(alpha, r, work[workIdx]); ++workIdx;
+                            work[workIdx] = ComputeAlphaScale(alpha, work[workIdx]);
+                            ++workIdx;
                         }
                     }
                 }
-
-                bitmap.WritePixels(Bounds, work, 4 * Bounds.Width, 0);
-
-                _data.Reset();
             }
 
-            static byte ComputeColorScale(byte sa, byte sv, byte dv)
+            bitmap.WritePixels(Bounds, work, 4 * Bounds.Width, 0);
+
+            _data.Reset();
+        }
+
+        static byte ComputeColorScale(byte sa, byte sv, byte dv)
+        {
+            var val = sa * sv + (255 - sa) * dv;
+            val = (val * 2 + 255) / 255 / 2;
+            return (byte)val;
+        }
+
+        static byte ComputeAlphaScale(byte sa, byte dv)
+        {
+            // work[workIdx] = (byte)(alpha + work[workIdx] * (255 - alpha) / 255);
+            var val = ((255 - sa) * dv * 2 + 255) / 255 / 2;
+            return (byte)(sa + val);
+        }
+    }
+
+    internal class IndexedFrame : PngRendererFrame
+    {
+        private IDATStream _data;
+        private PngColor[] _palette;
+        private byte[] _transparency;
+
+        private byte[] _decompress;
+
+        public IndexedFrame(ApngFile file, Png.ApngFrame frame, TimeSpan begin) : base(frame, begin)
+        {
+            _data = new IDATStream(file, frame);
+
+            _palette = file.PLTEChunk.Colors;
+
+            if (file.tRNSChunk is null)
             {
-                var val = sa * sv + (255 - sa) * dv;
-                val = (val * 2 + 255) / 255 / 2;
-                return (byte)val;
+                _transparency = new byte[0];
+            }
+            else
+            {
+                var trns = (tRNSIndexChunk)file.tRNSChunk;
+                _transparency = trns.AlphaForEachIndex;
             }
 
-            static byte ComputeAlphaScale(byte sa, byte dv)
+            if (_transparency.Length < _palette.Length)
             {
-                // work[workIdx] = (byte)(alpha + work[workIdx] * (255 - alpha) / 255);
-                var val = ((255 - sa) * dv * 2 + 255) / 255 / 2;
-                return (byte)(sa + val);
+                _transparency = _transparency.Concat(Enumerable.Repeat((byte)0xFF, _palette.Length - _transparency.Length))
+                                             .ToArray();
             }
         }
 
-        internal class IndexedFrame : Frame
+        public override void Render(WriteableBitmap bitmap, byte[] work, byte[] backup)
         {
-            private IDATStream _data;
-            private PngColor[] _palette;
-            private byte[] _transparency;
-
-            private byte[] _decompress;
-
-            public IndexedFrame(APNG file, Png.Frame frame, TimeSpan begin) : base(frame, begin)
+            if (_decompress is null)
             {
-                _data = new IDATStream(file, frame);
+                _decompress = new byte[_data.Stride * Height];
 
-                _palette = file.PLTEChunk.Colors;
-
-                if (file.tRNSChunk is null)
+                var i = 0;
+                while (i < _decompress.Length)
                 {
-                    _transparency = new byte[0];
-                }
-                else
-                {
-                    var trns = (tRNSIndexChunk)file.tRNSChunk;
-                    _transparency = trns.AlphaForEachIndex;
-                }
-
-                if (_transparency.Length < _palette.Length)
-                {
-                    _transparency = _transparency.Concat(Enumerable.Repeat((byte)0xFF, _palette.Length - _transparency.Length))
-                                                 .ToArray();
+                    _data.DecompressLine(_decompress, i, _data.Stride);
+                    i += _data.Stride;
                 }
             }
 
-            public override void Render(WriteableBitmap bitmap, byte[] work, byte[] backup)
+            bitmap.CopyPixels(Bounds, work, 4 * Bounds.Width, 0);
+            if (backup != null)
             {
-                if (_decompress is null)
-                {
-                    _decompress = new byte[_data.Stride * Height];
+                Array.Copy(work, backup, Width * Height * 4);
+            }
 
-                    var i = 0;
-                    while (i < _decompress.Length)
+            if (BlendMethod == BlendOps.APNGBlendOpSource)
+            {
+                int j = 0;
+                for (var i = 0; i < _decompress.Length; ++i)
+                {
+                    var idx = _decompress[i];
+                    var color = _palette[idx];
+                    work[j++] = color.B;
+                    work[j++] = color.G;
+                    work[j++] = color.R;
+                    work[j++] = _transparency[idx];
+                }
+            }
+            else if (BlendMethod == BlendOps.APNGBlendOpOver)
+            {
+                int j = 0;
+                for (var i = 0; i < _decompress.Length; ++i)
+                {
+                    var idx = _decompress[i];
+                    var alpha = _transparency[idx];
+
+                    if (alpha == 0)
                     {
-                        _data.DecompressLine(_decompress, i, _data.Stride);
-                        i += _data.Stride;
+                        j += 4;
+                        continue;
                     }
-                }
 
-                bitmap.CopyPixels(Bounds, work, 4 * Bounds.Width, 0);
-                if (backup != null)
-                {
-                    Array.Copy(work, backup, Width * Height * 4);
-                }
+                    var color = _palette[idx];
 
-                if (BlendMethod == BlendOps.APNGBlendOpSource)
-                {
-                    int j = 0;
-                    for (var i = 0; i < _decompress.Length; ++i)
+                    if (alpha == 0xFF)
                     {
-                        var idx = _decompress[i];
-                        var color = _palette[idx];
                         work[j++] = color.B;
                         work[j++] = color.G;
                         work[j++] = color.R;
-                        work[j++] = _transparency[idx];
+                        work[j++] = alpha;
                     }
-                }
-                else if (BlendMethod == BlendOps.APNGBlendOpOver)
-                {
-                    int j = 0;
-                    for (var i = 0; i < _decompress.Length; ++i)
+                    else
                     {
-                        var idx = _decompress[i];
-                        var alpha = _transparency[idx];
-
-                        if (alpha == 0)
-                        {
-                            j += 4;
-                            continue;
-                        }
-
-                        var color = _palette[idx];
-
-                        if (alpha == 0xFF)
-                        {
-                            work[j++] = color.B;
-                            work[j++] = color.G;
-                            work[j++] = color.R;
-                            work[j++] = alpha;
-                        }
-                        else
-                        {
-                            work[j] = (byte)((alpha * color.B + (1 - alpha) * work[j]) >> 8); ++j;
-                            work[j] = (byte)((alpha * color.G + (1 - alpha) * work[j]) >> 8); ++j;
-                            work[j] = (byte)((alpha * color.R + (1 - alpha) * work[j]) >> 8); ++j;
-                            work[j] = alpha;
-                            ++j;
-                        }
+                        work[j] = (byte)((alpha * color.B + (1 - alpha) * work[j]) >> 8); ++j;
+                        work[j] = (byte)((alpha * color.G + (1 - alpha) * work[j]) >> 8); ++j;
+                        work[j] = (byte)((alpha * color.R + (1 - alpha) * work[j]) >> 8); ++j;
+                        work[j] = alpha;
+                        ++j;
                     }
                 }
-
-                bitmap.WritePixels(Bounds, work, 4 * Bounds.Width, 0);
             }
+
+            bitmap.WritePixels(Bounds, work, 4 * Bounds.Width, 0);
         }
     }
 }

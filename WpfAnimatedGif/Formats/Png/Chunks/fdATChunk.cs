@@ -8,62 +8,21 @@ using System.Linq;
 
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
-    internal class fdATChunk : Chunk
+    internal class fdATChunk
     {
-        public fdATChunk(byte[] bytes)
-            : base(bytes)
+        internal fdATChunk(ChunkStream cs)
         {
-        }
-
-        public fdATChunk(MemoryStream ms)
-            : base(ms)
-        {
-        }
-
-        public fdATChunk(Chunk chunk)
-            : base(chunk)
-        {
+            SequenceNumber = cs.ReadUInt32();
+            FrameData = cs.ReadBytes((int)cs.Length - 4);
+            cs.ReadCrc();
         }
 
         public uint SequenceNumber { get; private set; }
-
         public byte[] FrameData { get; private set; }
-
-        protected override void ParseData(MemoryStream ms)
-        {
-            SequenceNumber = Helper.ConvertEndian(ms.ReadUInt32());
-            FrameData = ms.ReadBytes((int)Length - 4);
-        }
 
         public IDATChunk ToIDATChunk()
         {
-            uint newCrc;
-            using (var msCrc = new MemoryStream())
-            {
-                msCrc.WriteBytes(new[] { (byte)'I', (byte)'D', (byte)'A', (byte)'T' });
-                msCrc.WriteBytes(FrameData);
-
-                newCrc = CrcHelper.Calculate(msCrc.ToArray());
-            }
-
-            using (var ms = new MemoryStream())
-            {
-                ms.WriteUInt32(Helper.ConvertEndian(Length - 4));
-                ms.WriteBytes(new[] { (byte)'I', (byte)'D', (byte)'A', (byte)'T' });
-                ms.WriteBytes(FrameData);
-                ms.WriteUInt32(Helper.ConvertEndian(newCrc));
-                ms.Position = 0;
-
-                return new IDATChunk(ms);
-            }
+            return new IDATChunk(FrameData);
         }
-
-        public Stream Decompress()
-        {
-            var mem = new MemoryStream(FrameData, 8, FrameData.Length - 12);
-            return new GZipStream(mem, CompressionMode.Decompress);
-        }
-
-
     }
 }

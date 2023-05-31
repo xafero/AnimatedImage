@@ -1,18 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Automation.Peers;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Media.Media3D;
 using WpfAnimatedGif.Formats.Gif;
 
 namespace WpfAnimatedGif.Formats
@@ -22,17 +13,17 @@ namespace WpfAnimatedGif.Formats
         private GifFile _file;
         private int _frameIndex = -1;
         private WriteableBitmap _bitmap;
-        private Frame[] _frames;
+        private GifRendererFrame[] _frames;
 
         private byte[] _work;
 
         // variables for RestorePrevious
         private byte[] _restorePixels;
-        private Frame _previouns;
+        private GifRendererFrame _previouns;
 
         // variables for RestoreBackground
-        private Frame _background;
-
+        private FrameRenderFrame _background;
+        private readonly FrameRenderFrame _fullFrame;
 
         public GifRenderer(GifFile file)
         {
@@ -42,15 +33,17 @@ namespace WpfAnimatedGif.Formats
             Width = descriptor.Width;
             Height = descriptor.Height;
 
+            _fullFrame = _background = new FrameRenderFrame(0, 0, Width, Height, TimeSpan.Zero, TimeSpan.Zero);
+
             _bitmap = new WriteableBitmap(Width, Height, 96, 96, PixelFormats.Pbgra32, null);
             _restorePixels = new byte[Width * Height * 4];
             _work = new byte[Width * Height * 4];
 
-            var frames = new List<Frame>();
+            var frames = new List<GifRendererFrame>();
             var span = TimeSpan.Zero;
             foreach (var giffrm in file.Frames)
             {
-                var frame = new Frame(file, giffrm, span);
+                var frame = GifRendererFrame.Create(file, giffrm, span);
                 span = frame.End;
 
                 frames.Add(frame);
@@ -66,7 +59,7 @@ namespace WpfAnimatedGif.Formats
 
         public override int CurrentIndex => _frameIndex;
 
-        public override int Count => _file.Frames.Count;
+        public override int FrameCount => _file.Frames.Count;
 
         public override WriteableBitmap Current => _bitmap;
 
@@ -74,23 +67,7 @@ namespace WpfAnimatedGif.Formats
 
         public override int RepeatCount => _file.RepeatCount;
 
-        public override void ProcessFrame(TimeSpan timespan)
-        {
-            while (timespan > Duration)
-            {
-                timespan -= Duration;
-            }
-
-            for (var frameIdx = 0; frameIdx < _frames.Length; ++frameIdx)
-            {
-                var frame = _frames[frameIdx];
-                if (frame.Begin <= timespan && timespan < frame.End)
-                {
-                    ProcessFrame(frameIdx);
-                    return;
-                }
-            }
-        }
+        protected override FrameRenderFrame this[int idx] => _frames[idx];
 
         public override void ProcessFrame(int frameIndex)
         {
@@ -99,19 +76,16 @@ namespace WpfAnimatedGif.Formats
 
             if (_frameIndex > frameIndex)
             {
-                Clear(_bitmap, 0, 0, Width, Height);
                 _frameIndex = -1;
                 _previouns = null;
-                _background = null;
+                _background = _fullFrame;
             }
 
             // restore
 
             if (_previouns != null)
             {
-                var rect = new Int32Rect(_previouns.X, _previouns.Y, _previouns.Width, _previouns.Height);
-
-                _bitmap.WritePixels(rect, _restorePixels, _previouns.Width * 4, 0);
+                _bitmap.WritePixels(_previouns.Bounds, _restorePixels, _previouns.Width * 4, 0);
                 _previouns = null;
             }
 
@@ -154,6 +128,7 @@ namespace WpfAnimatedGif.Formats
 
 
             // render current frame
+
             var curFrame = _frames[frameIndex];
 
             switch (curFrame.DisposalMethod)
@@ -193,107 +168,100 @@ namespace WpfAnimatedGif.Formats
                         width * 4,
                         0);
         }
+    }
 
-        internal class Frame
+    internal class GifRendererFrame : FrameRenderFrame
+    {
+        public FrameDisposalMethod DisposalMethod { get; }
+
+        private GifColor[] _colorTable;
+        private GifImageData _data;
+        private int _transparencyIndex;
+        private byte[] _decompress;
+
+        public GifRendererFrame(
+                GifFile file, GifFrame frame,
+                TimeSpan begin, TimeSpan end,
+                FrameDisposalMethod method,
+                int transparencyIndex)
+            : base(frame.Descriptor.Left, frame.Descriptor.Top,
+                   frame.Descriptor.Width, frame.Descriptor.Height,
+                   begin, end)
         {
-            public TimeSpan Begin { get; }
-            public TimeSpan End { get; }
-            public FrameDisposalMethod DisposalMethod { get; }
-            public int X => _bounds.X;
-            public int Y => _bounds.Y;
-            public int Width => _bounds.Width;
-            public int Height => _bounds.Height;
+            _colorTable = frame.Descriptor.HasLocalColorTable ?
+                                    frame.LocalColorTable :
+                                    file.GlobalColorTable;
+            _data = frame.ImageData;
+            _transparencyIndex = transparencyIndex;
 
-            private Int32Rect _bounds;
-            private GifColor[] _colorTable;
-            private GifImageData _data;
-            private int _transparencyIndex;
-            private byte[] _decompress;
+            DisposalMethod = method;
+        }
 
-
-            public Frame(GifFile file, GifFrame frame, TimeSpan begin)
+        public void Render(WriteableBitmap bitmap, byte[] work, byte[] backup)
+        {
+            if (_decompress is null)
             {
-                Begin = begin;
+                _decompress = _data.Decompress();
 
-                _bounds = new Int32Rect(
-                            frame.Descriptor.Left,
-                            frame.Descriptor.Top,
-                            frame.Descriptor.Width,
-                            frame.Descriptor.Height);
-
-                _colorTable = frame.Descriptor.HasLocalColorTable ?
-                                        frame.LocalColorTable :
-                                        file.GlobalColorTable;
-                _data = frame.ImageData;
-
-
-                var gce = frame.Extensions
-                               .OfType<GifGraphicControlExtension>()
-                               .FirstOrDefault();
-
-                if (gce is null)
-                {
-                    End = begin + TimeSpan.FromMilliseconds(100);
-                    DisposalMethod = FrameDisposalMethod.None;
-                    _transparencyIndex = -1;
-                }
-                else
-                {
-                    End = begin + TimeSpan.FromMilliseconds(gce.Delay == 0 ? 100 : gce.Delay);
-                    DisposalMethod = (FrameDisposalMethod)gce.DisposalMethod;
-                    _transparencyIndex = gce.HasTransparency ? gce.TransparencyIndex : -1;
-                }
-            }
-
-            public bool IsInvolve(Frame frame)
-            {
-                return X <= frame.X
-                    && Y <= frame.Y
-                    && (frame.X + frame.Width) <= (X + Width)
-                    && (frame.Y + frame.Height) <= (Y + Height);
-            }
-
-
-            public void Render(WriteableBitmap bitmap, byte[] work, byte[] backup)
-            {
-                if (_decompress is null)
-                {
-                    _decompress = _data.Decompress();
-
-                    for (var i = 0; i < _decompress.Length; ++i)
-                    {
-                        if (_decompress[i] >= _colorTable.Length)
-                            _decompress[i] = 0;
-                    }
-                }
-
-                bitmap.CopyPixels(_bounds, work, 4 * _bounds.Width, 0);
-
-                if (backup != null)
-                {
-                    Array.Copy(work, backup, Width * Height * 4);
-                }
-
-                int j = 0;
                 for (var i = 0; i < _decompress.Length; ++i)
                 {
-                    var idx = _decompress[i];
+                    if (_decompress[i] >= _colorTable.Length)
+                        _decompress[i] = 0;
+                }
+            }
 
-                    if (idx == _transparencyIndex)
-                    {
-                        j += 4;
-                        continue;
-                    }
+            bitmap.CopyPixels(Bounds, work, 4 * Width, 0);
 
-                    var color = _colorTable[idx];
-                    work[j++] = color.B;
-                    work[j++] = color.G;
-                    work[j++] = color.R;
-                    work[j++] = 255;
+            if (backup != null)
+            {
+                Array.Copy(work, backup, Width * Height * 4);
+            }
+
+            int j = 0;
+            for (var i = 0; i < _decompress.Length; ++i)
+            {
+                var idx = _decompress[i];
+
+                if (idx == _transparencyIndex)
+                {
+                    j += 4;
+                    continue;
                 }
 
-                bitmap.WritePixels(_bounds, work, 4 * _bounds.Width, 0);
+                var color = _colorTable[idx];
+                work[j++] = color.B;
+                work[j++] = color.G;
+                work[j++] = color.R;
+                work[j++] = 255;
             }
+
+            bitmap.WritePixels(Bounds, work, 4 * Width, 0);
+        }
+
+        public static GifRendererFrame Create(GifFile file, GifFrame frame, TimeSpan begin)
+        {
+            var gce = frame.Extensions
+                           .OfType<GifGraphicControlExtension>()
+                           .FirstOrDefault();
+
+            TimeSpan end;
+            FrameDisposalMethod method;
+            int transparencyIndex;
+
+            if (gce is null)
+            {
+                end = begin + TimeSpan.FromMilliseconds(100);
+                method = FrameDisposalMethod.None;
+                transparencyIndex = -1;
+            }
+            else
+            {
+                end = begin + TimeSpan.FromMilliseconds(gce.Delay == 0 ? 100 : gce.Delay);
+                method = (FrameDisposalMethod)gce.DisposalMethod;
+                transparencyIndex = gce.HasTransparency ? gce.TransparencyIndex : -1;
+            }
+
+            return new GifRendererFrame(file, frame, begin, end, method, transparencyIndex);
         }
     }
 }

@@ -2,7 +2,7 @@
 
 namespace WpfAnimatedGif.Formats.Png.Types
 {
-    public enum FilterMethod : byte
+    internal enum FilterMethod : byte
     {
         None = 0,
         Sub = 1,

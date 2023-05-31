@@ -2,7 +2,7 @@
 
 namespace WpfAnimatedGif.Formats.Png.Types
 {
-    public enum ColorType : byte
+    internal enum ColorType : byte
     {
         Glayscale = 0,
         Color = 2,

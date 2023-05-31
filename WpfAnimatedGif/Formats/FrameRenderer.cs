@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Packaging;
 using System.Net;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media.Imaging;
 using System.Windows.Resources;
@@ -15,7 +16,7 @@ namespace WpfAnimatedGif.Formats
     {
         public abstract int CurrentIndex { get; }
 
-        public abstract int Count { get; }
+        public abstract int FrameCount { get; }
 
         public abstract int RepeatCount { get; }
 
@@ -23,9 +24,27 @@ namespace WpfAnimatedGif.Formats
 
         public abstract WriteableBitmap Current { get; }
 
-        public abstract void ProcessFrame(int frameIndex);
+        protected abstract FrameRenderFrame this[int frameIndex] { get; }
 
-        public abstract void ProcessFrame(TimeSpan timespan);
+        public void ProcessFrame(TimeSpan timespan)
+        {
+            while (timespan > Duration)
+            {
+                timespan -= Duration;
+            }
+
+            for (var frameIdx = 0; frameIdx < FrameCount; ++frameIdx)
+            {
+                var frame = this[frameIdx];
+                if (frame.Begin <= timespan && timespan < frame.End)
+                {
+                    ProcessFrame(frameIdx);
+                    return;
+                }
+            }
+        }
+
+        public abstract void ProcessFrame(int frameIndex);
 
         public abstract TimeSpan GetStartTime(int idx);
 
@@ -95,7 +114,7 @@ namespace WpfAnimatedGif.Formats
 
             if (Signature.IsPngSignature(magic))
             {
-                var png = new APNG(stream);
+                var png = new ApngFile(stream);
 
                 renderer = new PngRenderer(png);
                 return true;
@@ -143,7 +162,7 @@ namespace WpfAnimatedGif.Formats
         private static class Signature
         {
             public static readonly byte[] GifHead = new byte[] { 0x47, 0x49, 0x46, 0x38 }; // GIF8
-            public static readonly byte[] Png = global::WpfAnimatedGif.Formats.Png.Frame.Signature;
+            public static readonly byte[] Png = global::WpfAnimatedGif.Formats.Png.ApngFrame.Signature;
             public static readonly int MaxLength = Math.Max(GifHead.Length + 2, Png.Length);
 
             public static bool IsGifSignature(byte[] signature)
@@ -178,6 +197,33 @@ namespace WpfAnimatedGif.Formats
 
                 return true;
             }
+        }
+    }
+
+    internal class FrameRenderFrame
+    {
+        public int X => Bounds.X;
+        public int Y => Bounds.Y;
+        public int Width => Bounds.Width;
+        public int Height => Bounds.Height;
+        public Int32Rect Bounds { get; }
+
+        public TimeSpan Begin { get; }
+        public TimeSpan End { get; }
+
+        public FrameRenderFrame(int x, int y, int width, int height, TimeSpan begin, TimeSpan end)
+        {
+            Bounds = new Int32Rect(x, y, width, height);
+            Begin = begin;
+            End = end;
+        }
+
+        public bool IsInvolve(FrameRenderFrame frame)
+        {
+            return X <= frame.X
+                && Y <= frame.Y
+                && (frame.X + frame.Width) <= (X + Width)
+                && (frame.Y + frame.Height) <= (Y + Height);
         }
     }
 }

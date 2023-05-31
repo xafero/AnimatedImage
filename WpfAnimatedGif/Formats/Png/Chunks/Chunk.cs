@@ -8,50 +8,14 @@ using System.Text;
 
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
-    public class Chunk
+    internal class Chunk
     {
-        internal Chunk()
+        internal Chunk(ChunkStream cs)
         {
-            Length = 0;
-            ChunkType = string.Empty;
-            ChunkData = null;
-            Crc = 0;
-        }
-
-        internal Chunk(byte[] bytes)
-        {
-            var ms = new MemoryStream(bytes);
-            Length = Helper.ConvertEndian(ms.ReadUInt32());
-            ChunkType = Encoding.ASCII.GetString(ms.ReadBytes(4));
-            ChunkData = ms.ReadBytes((int)Length);
-            Crc = Helper.ConvertEndian(ms.ReadUInt32());
-
-            if (ms.Position != ms.Length)
-                throw new Exception("Chunk length not correct.");
-            if (Length != ChunkData.Length)
-                throw new Exception("Chunk data length not correct.");
-
-            ParseData(new MemoryStream(ChunkData));
-        }
-
-        internal Chunk(Stream stream)
-        {
-            Length = Helper.ConvertEndian(stream.ReadUInt32());
-            ChunkType = Encoding.ASCII.GetString(stream.ReadBytes(4));
-            ChunkData = stream.ReadBytes((int)Length);
-            Crc = Helper.ConvertEndian(stream.ReadUInt32());
-
-            ParseData(new MemoryStream(ChunkData));
-        }
-
-        internal Chunk(Chunk chunk)
-        {
-            Length = chunk.Length;
-            ChunkType = chunk.ChunkType;
-            ChunkData = chunk.ChunkData;
-            Crc = chunk.Crc;
-
-            ParseData(new MemoryStream(ChunkData));
+            Length = cs.Length;
+            ChunkType = cs.ChunkType ;
+            ChunkData = cs.ReadBytes((int)Length);
+            Crc = cs.ReadCrc();
         }
 
         public uint Length { get; set; }
@@ -101,10 +65,6 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
         public void ModifyChunkData(int postion, uint newData)
         {
             ModifyChunkData(postion, BitConverter.GetBytes(newData));
-        }
-
-        protected virtual void ParseData(MemoryStream ms)
-        {
         }
     }
 }

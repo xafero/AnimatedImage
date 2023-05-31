@@ -9,31 +9,17 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
     /// <summary>
     /// Animation Control Chunk
     /// </summary>
-    public class acTLChunk : Chunk
+    internal class acTLChunk
     {
-        public acTLChunk(byte[] bytes)
-            : base(bytes)
+        internal acTLChunk(ChunkStream cs)
         {
-        }
-
-        public acTLChunk(MemoryStream ms)
-            : base(ms)
-        {
-        }
-
-        public acTLChunk(Chunk chunk)
-            : base(chunk)
-        {
+            NumFrames = cs.ReadUInt32();
+            NumPlays = cs.ReadUInt32();
+            cs.ReadCrc();
         }
 
         public uint NumFrames { get; private set; }
 
         public uint NumPlays { get; private set; }
-
-        protected override void ParseData(MemoryStream ms)
-        {
-            NumFrames = Helper.ConvertEndian(ms.ReadUInt32());
-            NumPlays = Helper.ConvertEndian(ms.ReadUInt32());
-        }
     }
 }

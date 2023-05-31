@@ -7,39 +7,23 @@ using System.Threading.Tasks;
 
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
-    public class PLTEChunk : Chunk
+    internal class PLTEChunk
     {
         private PngColor[] _colors;
         public PngColor[] Colors => _colors;
 
-        public PLTEChunk(byte[] bytes)
-            : base(bytes)
+        internal PLTEChunk(ChunkStream cs)
         {
-        }
-
-        public PLTEChunk(MemoryStream ms)
-            : base(ms)
-        {
-        }
-
-        public PLTEChunk(Chunk chunk)
-            : base(chunk)
-        {
-        }
-
-        protected override void ParseData(MemoryStream ms)
-        {
-            int length = ms.ReadInt32() / 3;
-            ms.Position += 4;
+            int length = (int)cs.Length / 3;
 
             _colors = new PngColor[length];
 
             for (var i = 0; i < length; ++i)
             {
                 _colors[i] = new PngColor(
-                    (byte)ms.ReadByte(),
-                    (byte)ms.ReadByte(),
-                    (byte)ms.ReadByte());
+                    (byte)cs.ReadByte(),
+                    (byte)cs.ReadByte(),
+                    (byte)cs.ReadByte());
             }
         }
 

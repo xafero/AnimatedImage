@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace WpfAnimatedGif.Formats.Png.Types
 {
-    internal enum InterlaceMethod : byte
+    internal enum BlendOps
     {
-        None = 0,
-        Adam7 = 1,
+        APNGBlendOpSource = 0,
+        APNGBlendOpOver = 1,
     }
 }

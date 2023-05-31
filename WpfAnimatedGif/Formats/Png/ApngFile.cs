@@ -4,57 +4,63 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using WpfAnimatedGif.Formats.Png.Chunks;
 
 namespace WpfAnimatedGif.Formats.Png
 {
-    public class APNG
+    internal class ApngFile
     {
-        private readonly Frame defaultImage = new Frame();
-        private readonly List<Frame> frames = new List<Frame>();
+        private readonly ApngFrame defaultImage = new ApngFrame();
+        private readonly List<ApngFrame> frames = new List<ApngFrame>();
 
-        public APNG(string fileName) : this(File.ReadAllBytes(fileName))
+        public ApngFile(string fileName) : this(File.ReadAllBytes(fileName))
         { }
 
-        public APNG(byte[] fileBytes) : this(new MemoryStream(fileBytes))
+        public ApngFile(byte[] fileBytes) : this(new MemoryStream(fileBytes))
         { }
 
 
-        public APNG(Stream stream)
+        public ApngFile(Stream stream)
         {
             // check file signature.
-            if (!Helper.IsBytesEqual(stream.ReadBytes(Frame.Signature.Length), Frame.Signature))
+            if (!Helper.IsBytesEqual(stream.ReadBytes(ApngFrame.Signature.Length), ApngFrame.Signature))
                 throw new Exception("File signature incorrect.");
 
-            // Read IHDR chunk.
-            IHDRChunk = new IHDRChunk(stream);
-            if (IHDRChunk.ChunkType != "IHDR")
+
+            var chunkStream = new ChunkStream(stream);
+
+            if (chunkStream.ReadChunkType() != "IHDR")
                 throw new Exception("IHDR chunk must located before any other chunks.");
 
+            // Read IHDR chunk.
+            IHDRChunk = new IHDRChunk(chunkStream);
+
             // Now let's loop in chunks
-            Chunk chunk;
-            Frame frame = null;
-            var otherChunks = new List<OtherChunk>();
+            ApngFrame frame = null;
+            var otherChunks = new List<Chunk>();
             bool isIDATAlreadyParsed = false;
+            bool isIENDParsed = false;
+
             do
             {
-                if (stream.Position == stream.Length)
-                    throw new Exception("IEND chunk expected.");
+                var chunkType = chunkStream.ReadChunkType();
 
-                chunk = new Chunk(stream);
-
-                switch (chunk.ChunkType)
+                Debug.Print(chunkType);
+                switch (chunkType)
                 {
+                    case null:
+                        throw new Exception("IEND chunk expected.");
+
                     case "IHDR":
                         throw new Exception("Only single IHDR is allowed.");
-                        break;
 
                     case "acTL":
                         if (IsSimplePNG)
                             throw new Exception("acTL chunk must located before any IDAT and fdAT");
 
-                        acTLChunk = new acTLChunk(chunk);
+                        acTLChunk = new acTLChunk(chunkStream);
                         break;
 
                     case "IDAT":
@@ -64,7 +70,7 @@ namespace WpfAnimatedGif.Formats.Png
 
                         // Only default image has IDAT.
                         defaultImage.IHDRChunk = IHDRChunk;
-                        defaultImage.AddIDATChunk(new IDATChunk(chunk));
+                        defaultImage.AddIDATChunk(new IDATChunk(chunkStream));
                         isIDATAlreadyParsed = true;
                         break;
 
@@ -83,18 +89,19 @@ namespace WpfAnimatedGif.Formats.Png
                             // for next use
                             if (frame != null)
                                 frames.Add(frame);
-                            frame = new Frame
+                            frame = new ApngFrame
                             {
                                 IHDRChunk = IHDRChunk,
-                                fcTLChunk = new fcTLChunk(chunk)
+                                fcTLChunk = new fcTLChunk(chunkStream)
                             };
                         }
                         // Otherwise this fcTL is used by the DEFAULT IMAGE.
                         else
                         {
-                            defaultImage.fcTLChunk = new fcTLChunk(chunk);
+                            defaultImage.fcTLChunk = new fcTLChunk(chunkStream);
                         }
                         break;
+
                     case "fdAT":
                         // Simple PNG should ignore this.
                         if (IsSimplePNG)
@@ -104,11 +111,11 @@ namespace WpfAnimatedGif.Formats.Png
                         if (frame == null || frame.fcTLChunk == null)
                             throw new Exception("fcTL chunk expected.");
 
-                        frame.AddIDATChunk(new fdATChunk(chunk).ToIDATChunk());
+                        frame.AddIDATChunk(new fdATChunk(chunkStream).ToIDATChunk());
                         break;
 
                     case "PLTE":
-                        PLTEChunk = new PLTEChunk(chunk);
+                        PLTEChunk = new PLTEChunk(chunkStream);
                         break;
 
                     case "tRNS":
@@ -117,7 +124,7 @@ namespace WpfAnimatedGif.Formats.Png
                             throw new Exception("IHDR chunk expected");
                         }
 
-                        tRNSChunk = tRNSChunk.Create(IHDRChunk, chunk);
+                        tRNSChunk = tRNSChunk.Create(IHDRChunk, chunkStream);
                         break;
 
                     case "IEND":
@@ -125,19 +132,23 @@ namespace WpfAnimatedGif.Formats.Png
                         if (frame != null)
                             frames.Add(frame);
 
+                        var endChunk = new IENDChunk(chunkStream);
+
                         if (DefaultImage.IDATChunks.Count != 0)
-                            DefaultImage.IENDChunk = new IENDChunk(chunk);
-                        foreach (Frame f in frames)
+                            DefaultImage.IENDChunk = endChunk;
+                        foreach (ApngFrame f in frames)
                         {
-                            f.IENDChunk = new IENDChunk(chunk);
+                            f.IENDChunk = endChunk;
                         }
+                        isIENDParsed = true;
                         break;
 
                     default:
-                        otherChunks.Add(new OtherChunk(chunk));
+                        otherChunks.Add(new Chunk(chunkStream));
                         break;
                 }
-            } while (chunk.ChunkType != "IEND");
+
+            } while (!isIENDParsed);
 
             // We have one more thing to do:
             // If the default image if part of the animation,
@@ -167,7 +178,7 @@ namespace WpfAnimatedGif.Formats.Png
         ///     If IsSimplePNG = True, returns the only image;
         ///     if False, returns the default image
         /// </summary>
-        public Frame DefaultImage
+        public ApngFrame DefaultImage
         {
             get { return defaultImage; }
         }
@@ -176,7 +187,7 @@ namespace WpfAnimatedGif.Formats.Png
         ///     Gets the frame array.
         ///     If IsSimplePNG = True, returns empty
         /// </summary>
-        public Frame[] Frames
+        public ApngFrame[] Frames
         {
             get { return frames.ToArray(); }
         }

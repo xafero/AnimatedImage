@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 
 namespace WpfAnimatedGif.Formats.Png.Types
 {
-    internal enum InterlaceMethod : byte
+    internal enum DisposeOps
     {
-        None = 0,
-        Adam7 = 1,
+        APNGDisposeOpNone = 0,
+        APNGDisposeOpBackground = 1,
+        APNGDisposeOpPrevious = 2,
     }
 }

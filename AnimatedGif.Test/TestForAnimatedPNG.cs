@@ -20,10 +20,10 @@ namespace AnimatedGif.Test
         public void Sequence(string filename)
         {
             var imageStream = Open(filename);
-            var pngfile = new APNG(imageStream);
+            var pngfile = new ApngFile(imageStream);
             var renderer = new PngRenderer(pngfile);
 
-            for (int i = 0; i < renderer.Count; ++i)
+            for (int i = 0; i < renderer.FrameCount; ++i)
             {
                 renderer.ProcessFrame(i);
 
@@ -43,17 +43,17 @@ namespace AnimatedGif.Test
         public void Jump(string filename)
         {
             var imageStream = Open(filename);
-            var pngfile = new APNG(imageStream);
+            var pngfile = new ApngFile(imageStream);
             var renderer = new PngRenderer(pngfile);
 
             var indics = new List<int>();
 
-            foreach (var step in Enumerable.Range(1, renderer.Count))
+            foreach (var step in Enumerable.Range(1, renderer.FrameCount))
             {
                 indics.Add(0);
 
-                for (int start = 1; start < renderer.Count; ++start)
-                    for (int idx = start; idx < renderer.Count; idx += step)
+                for (int start = 1; start < renderer.FrameCount; ++start)
+                    for (int idx = start; idx < renderer.FrameCount; idx += step)
                         indics.Add(idx);
             }
 

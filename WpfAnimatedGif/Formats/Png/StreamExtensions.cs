@@ -106,41 +106,6 @@ namespace WpfAnimatedGif.Formats.Png
             return buffer;
         }
 
-        public static char ReadChar(this Stream ms)
-        {
-            return BitConverter.ToChar(ms.ReadBytes(2), 0);
-        }
-
-        public static short ReadInt16(this Stream ms)
-        {
-            return BitConverter.ToInt16(ms.ReadBytes(2), 0);
-        }
-
-        public static int ReadInt32(this Stream ms)
-        {
-            return BitConverter.ToInt32(ms.ReadBytes(4), 0);
-        }
-
-        public static long ReadInt64(this Stream ms)
-        {
-            return BitConverter.ToInt64(ms.ReadBytes(8), 0);
-        }
-
-        public static ushort ReadUInt16(this Stream ms)
-        {
-            return BitConverter.ToUInt16(ms.ReadBytes(2), 0);
-        }
-
-        public static uint ReadUInt32(this Stream ms)
-        {
-            return BitConverter.ToUInt32(ms.ReadBytes(4), 0);
-        }
-
-        public static ulong ReadUInt64(this Stream ms)
-        {
-            return BitConverter.ToUInt64(ms.ReadBytes(8), 0);
-        }
-
         #endregion Read
 
         #region Write

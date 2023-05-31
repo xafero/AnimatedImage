@@ -3,24 +3,23 @@
 // Ported from: https://github.com/xupefei/APNG.NET
 
 using System.IO;
+using System.Linq;
 
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
-    public class IDATChunk : Chunk
+    internal class IDATChunk
     {
-        public IDATChunk(byte[] bytes)
-            : base(bytes)
+        internal IDATChunk(byte[] framedata)
         {
+            FrameData = framedata;
         }
 
-        public IDATChunk(MemoryStream ms)
-            : base(ms)
+        internal IDATChunk(ChunkStream cs)
         {
+            FrameData = cs.ReadBytes((int)cs.Length);
+            cs.ReadCrc();
         }
 
-        public IDATChunk(Chunk chunk)
-            : base(chunk)
-        {
-        }
+        public byte[] FrameData { get; private set; }
     }
 }
