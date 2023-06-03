@@ -47,7 +47,7 @@ namespace WpfAnimatedGif.Formats.Png
                 _ => throw new ArgumentException("unsupport color type")
             };
 
-            int width = (int)frame.fcTLChunk.Width;
+            int width = frame.fcTLChunk is null ? file.IHDRChunk.Width : (int)frame.fcTLChunk.Width;
             Stride = width * _dimension;
 
             _prevLine = new byte[Stride];
@@ -72,10 +72,14 @@ namespace WpfAnimatedGif.Formats.Png
             if (length > _prevLine.Length)
                 throw new ArgumentException("bad length");
 
-            var filter = (FilterMethod)_buffer.Read();
+            if (length == 0)
+                return;
 
-            for (var i = offset; i < offset + length; ++i)
-                bytes[i] = (byte)_buffer.Read();
+            _buffer.Read(bytes, offset, 1);
+
+            var filter = (FilterMethod)bytes[offset];
+
+            _buffer.Read(bytes, offset, length);
 
             switch (filter)
             {
@@ -161,22 +165,31 @@ namespace WpfAnimatedGif.Formats.Png
                 _stream = new ZlibStream(_memoryStream, CompressionMode.Decompress);
             }
 
-            public int Read8()
+            public int Read8(byte[] array, int offset, int length)
             {
-                if (_idx == _length)
+                var capacity = _length - _idx;
+
+                if (capacity == 0)
                 {
-                    var len = _stream.Read(_buffer, 0, _buffer.Length);
-                    if (len == 0)
-                        return -1;
-
-                    _idx = 0;
-                    _length = len;
+                    return _stream.Read(array, offset, length);
                 }
+                if (capacity >= length)
+                {
+                    Array.Copy(_buffer, _idx, array, offset, length);
+                    _idx += length;
 
-                return _buffer[_idx++];
+                    return length;
+                }
+                else
+                {
+                    Array.Copy(_buffer, _idx, array, offset, capacity);
+                    _idx = _length;
+
+                    return _stream.Read(array, offset + capacity, length - capacity) + capacity;
+                }
             }
 
-            public abstract int Read();
+            public abstract int Read(byte[] array, int offset, int length);
 
             public static ByteBuffer Create(Stream stream, byte depth)
                 => depth switch
@@ -207,14 +220,54 @@ namespace WpfAnimatedGif.Formats.Png
                 _subidx = 0;
             }
 
-            public override int Read()
+            public override int Read(byte[] array, int offset, int length)
             {
-                if (_subidx == _sub.Length)
-                {
-                    var val = Read8();
-                    if (val == -1)
-                        return -1;
+                var capacity = _sub.Length - _subidx;
 
+                if (length <= capacity)
+                {
+                    Array.Copy(_sub, _subidx, array, offset, length);
+                    _subidx += length;
+                    return length;
+                }
+
+                if (capacity != 0)
+                {
+                    Array.Copy(_sub, _subidx, array, offset, capacity);
+                    _subidx = _sub.Length;
+                    offset += capacity;
+                    length -= capacity;
+                }
+
+                var aryCopyLen = length >> 3;
+                if (aryCopyLen > 0)
+                {
+                    int spareIdx = length - aryCopyLen;
+                    var readLen = Read8(array, spareIdx, aryCopyLen);
+
+                    for (var leave = readLen; leave > 0; --leave)
+                    {
+                        var val = array[spareIdx++];
+                        array[offset++] = (byte)((val & 0b10000000) >> 7);
+                        array[offset++] = (byte)((val & 0b01000000) >> 6);
+                        array[offset++] = (byte)((val & 0b00100000) >> 5);
+                        array[offset++] = (byte)((val & 0b00010000) >> 4);
+                        array[offset++] = (byte)((val & 0b00001000) >> 3);
+                        array[offset++] = (byte)((val & 0b00000100) >> 2);
+                        array[offset++] = (byte)((val & 0b00000010) >> 1);
+                        array[offset++] = (byte)((val & 0b00000001));
+                    }
+
+                    if (readLen != aryCopyLen)
+                        return capacity + readLen;
+
+                    capacity += readLen;
+                    length -= readLen;
+                }
+
+                if (Read(_sub, 0, 1) != 0)
+                {
+                    var val = _sub[0];
                     _sub[0] = (byte)((val & 0b10000000) >> 7);
                     _sub[1] = (byte)((val & 0b01000000) >> 6);
                     _sub[2] = (byte)((val & 0b00100000) >> 5);
@@ -225,8 +278,12 @@ namespace WpfAnimatedGif.Formats.Png
                     _sub[7] = (byte)((val & 0b00000001));
                     _subidx = 0;
                 }
+                else return capacity;
 
-                return _sub[_subidx++];
+                Array.Copy(_sub, _subidx, array, offset, length);
+                _subidx += length;
+
+                return capacity + length;
             }
         }
 
@@ -247,22 +304,62 @@ namespace WpfAnimatedGif.Formats.Png
                 _subidx = 0;
             }
 
-            public override int Read()
+            public override int Read(byte[] array, int offset, int length)
             {
-                if (_subidx == _sub.Length)
-                {
-                    var val = Read8();
-                    if (val == -1)
-                        return -1;
+                var capacity = _sub.Length - _subidx;
 
+                if (length <= capacity)
+                {
+                    Array.Copy(_sub, _subidx, array, offset, length);
+                    _subidx += length;
+                    return length;
+                }
+
+                if (capacity != 0)
+                {
+                    Array.Copy(_sub, _subidx, array, offset, capacity);
+                    _subidx = _sub.Length;
+                    offset += capacity;
+                    length -= capacity;
+                }
+
+                var aryCopyLen = length >> 3;
+                if (aryCopyLen > 0)
+                {
+                    int spareIdx = length - aryCopyLen;
+                    var readLen = Read8(array, spareIdx, aryCopyLen);
+
+                    for (var leave = readLen; leave > 0; --leave)
+                    {
+                        var val = array[spareIdx++];
+                        array[offset++] = (byte)((val & 0b11000000) >> 6);
+                        array[offset++] = (byte)((val & 0b00110000) >> 4);
+                        array[offset++] = (byte)((val & 0b00001100) >> 2);
+                        array[offset++] = (byte)((val & 0b00000011));
+                    }
+
+                    if (readLen != aryCopyLen)
+                        return capacity + readLen;
+
+                    capacity += readLen;
+                    length -= readLen;
+                }
+
+                if (Read(_sub, 0, 1) != 0)
+                {
+                    var val = _sub[0];
                     _sub[0] = (byte)((val & 0b11000000) >> 6);
                     _sub[1] = (byte)((val & 0b00110000) >> 4);
                     _sub[2] = (byte)((val & 0b00001100) >> 2);
                     _sub[3] = (byte)((val & 0b00000011));
                     _subidx = 0;
                 }
+                else return capacity;
 
-                return _sub[_subidx++];
+                Array.Copy(_sub, _subidx, array, offset, length);
+                _subidx += length;
+
+                return capacity + length;
             }
         }
 
@@ -283,20 +380,58 @@ namespace WpfAnimatedGif.Formats.Png
                 _subidx = 0;
             }
 
-            public override int Read()
+            public override int Read(byte[] array, int offset, int length)
             {
-                if (_subidx == _sub.Length)
-                {
-                    var val = Read8();
-                    if (val == -1)
-                        return -1;
+                var capacity = _sub.Length - _subidx;
 
+                if (length <= capacity)
+                {
+                    Array.Copy(_sub, _subidx, array, offset, length);
+                    _subidx += length;
+                    return length;
+                }
+
+                if (capacity != 0)
+                {
+                    Array.Copy(_sub, _subidx, array, offset, capacity);
+                    _subidx = _sub.Length;
+                    offset += capacity;
+                    length -= capacity;
+                }
+
+                var aryCopyLen = length >> 1;
+                if (aryCopyLen > 0)
+                {
+                    int spareIdx = length - aryCopyLen;
+                    var readLen = Read8(array, spareIdx, aryCopyLen);
+
+                    for (var leave = readLen; leave > 0; --leave)
+                    {
+                        var val = array[spareIdx++];
+                        array[offset++] = (byte)((val & 0b11110000) >> 4);
+                        array[offset++] = (byte)((val & 0b00001111));
+                    }
+
+                    if (readLen != aryCopyLen)
+                        return capacity + readLen;
+
+                    capacity += readLen;
+                    length -= readLen;
+                }
+
+                if (Read8(_sub, 0, 1) != 0)
+                {
+                    var val = _sub[0];
                     _sub[0] = (byte)((val & 0b11110000) >> 4);
                     _sub[1] = (byte)((val & 0b00001111));
                     _subidx = 0;
                 }
+                else return capacity;
 
-                return _sub[_subidx++];
+                Array.Copy(_sub, _subidx, array, offset, length);
+                _subidx += length;
+
+                return capacity + length;
             }
         }
 
@@ -304,23 +439,35 @@ namespace WpfAnimatedGif.Formats.Png
         {
             public ByteBuffer8(Stream stream) : base(stream) { }
 
-            public override int Read() => Read8();
+            public override int Read(byte[] array, int offset, int length) => Read8(array, offset, length);
         }
 
         internal class ByteBuffer16 : ByteBuffer
         {
+            private byte[] _buffer = new byte[0];
+
             public ByteBuffer16(Stream stream) : base(stream) { }
 
-            public override int Read()
+            public override int Read(byte[] array, int offset, int length)
             {
-                var down = Read8();
-                var up = Read8();
+                if (_buffer.Length < length * 2)
+                {
+                    _buffer = new byte[length * 2];
+                }
 
                 // TODO support 16bit color
                 // this code may mistake a non-transparency color as a trasparency color.
                 // for example If 0xFF00 is declared as transparency color,
                 // 0xFF01 - 0xFFFF are treated as transparency color.
-                return up;
+
+                var readLen = Read8(_buffer, 0, length * 2);
+
+                for (var i = 0; i < readLen / 2; ++i)
+                {
+                    array[offset + i] = _buffer[i * 2 + 1];
+                }
+
+                return readLen / 2;
             }
         }
 
@@ -368,6 +515,9 @@ namespace WpfAnimatedGif.Formats.Png
                             _rangeStart -= _current.Length;
                             _rangeEnd = _rangeStart + _current.Length;
                         } while (pos < _rangeStart);
+
+                        _currentIdx = (int)(pos - _rangeStart);
+                        _position = pos;
                     }
                     else if (_rangeEnd <= pos)
                     {
@@ -377,9 +527,13 @@ namespace WpfAnimatedGif.Formats.Png
                             _rangeEnd += _current.Length;
                             _rangeStart = _rangeEnd - _current.Length;
                         } while (_rangeEnd <= pos);
+
+                        _currentIdx = (int)(pos - _rangeStart);
+                        _position = pos;
                     }
-                    else // _rangeStart <= pos && pos < _rangeEnd
+                    else
                     {
+                        // _rangeStart <= pos && pos < _rangeEnd
                         _currentIdx += (int)(pos - _position);
                         _position = pos;
                     }

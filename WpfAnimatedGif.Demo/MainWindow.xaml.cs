@@ -35,7 +35,7 @@ namespace WpfAnimatedGif.Demo
 
         private void btnOpenFile_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new OpenFileDialog {Filter = "GIF images|*.gif"};
+            var dlg = new OpenFileDialog {Filter = "Image Files(*.PNG;*.GIF)|*.PNG;*.GIF" };
             if (dlg.ShowDialog() == true)
             {
                 Images.Add(dlg.FileName);

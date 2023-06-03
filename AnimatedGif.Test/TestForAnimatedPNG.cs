@@ -17,6 +17,10 @@ namespace AnimatedGif.Test
     {
         [Test]
         [TestCase("BouncingBeachBall.png")]
+        [TestCase("GrayscaleBouncingBeachBall.png")]
+        [TestCase("GrayscaleMatteBouncingBeachBall.png")]
+        [TestCase("PaletteBouncingBeachBall.png")]
+        [TestCase("NonAlphaBouncingBeachBall.png")]
         public void Sequence(string filename)
         {
             var imageStream = Open(filename);

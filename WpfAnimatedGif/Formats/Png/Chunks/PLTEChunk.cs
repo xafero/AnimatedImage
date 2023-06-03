@@ -25,6 +25,8 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
                     (byte)cs.ReadByte(),
                     (byte)cs.ReadByte());
             }
+
+            cs.ReadCrc();
         }
 
     }

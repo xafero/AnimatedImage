@@ -34,7 +34,7 @@ namespace WpfAnimatedGif
 
         protected override object GetCurrentValueCore(object defaultOriginValue, object defaultDestinationValue, AnimationClock animationClock)
         {
-            TimeSpan value = animationClock.CurrentTime.Value;
+            TimeSpan value = animationClock.CurrentTime.HasValue ? animationClock.CurrentTime.Value : TimeSpan.Zero;
             _renderer.ProcessFrame(value);
 
             if (_renderer.CurrentIndex != _currentIndex)

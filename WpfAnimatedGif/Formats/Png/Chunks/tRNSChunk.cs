@@ -41,6 +41,8 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
             {
                 AlphaForEachGrayLevel[i] = cs.ReadUInt16();
             }
+
+            cs.ReadCrc();
         }
     }
 
@@ -65,6 +67,8 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
                         (byte)(cs.ReadUInt16() >> 8),
                         (byte)(cs.ReadUInt16() >> 8));
             }
+
+            cs.ReadCrc();
         }
     }
 
@@ -80,6 +84,8 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
             {
                 AlphaForEachIndex[i] = (byte)cs.ReadByte();
             }
+
+            cs.ReadCrc();
         }
     }
 }

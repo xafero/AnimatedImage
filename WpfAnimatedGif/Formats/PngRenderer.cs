@@ -39,7 +39,27 @@ namespace WpfAnimatedGif.Formats
             var span = TimeSpan.Zero;
             foreach (var pngfrm in file.Frames)
             {
-                PngRendererFrame frame = file.IHDRChunk.ColorType switch
+                var frame = CreateFrame(file, pngfrm, span);
+                span = frame.End;
+
+                frames.Add(frame);
+            }
+
+
+            if (frames.Count == 0)
+            {
+                _frames = new[] { CreateFrame(file, file.DefaultImage, span) };
+                Duration = _frames[0].End;
+            }
+            else
+            {
+                _frames = frames.ToArray();
+                Duration = span;
+            }
+
+            static PngRendererFrame CreateFrame(ApngFile file, ApngFrame pngfrm, TimeSpan span)
+            {
+                return file.IHDRChunk.ColorType switch
                 {
                     ColorType.Glayscale => new GrayscaleFrame(file, pngfrm, span),
                     ColorType.GlayscaleAlpha => new GrayscaleFrame(file, pngfrm, span),
@@ -47,13 +67,7 @@ namespace WpfAnimatedGif.Formats
                     ColorType.ColorAlpha => new ColorFrame(file, pngfrm, span),
                     ColorType.IndexedColor => new IndexedFrame(file, pngfrm, span)
                 };
-                span = frame.End;
-
-                frames.Add(frame);
             }
-
-            Duration = span;
-            _frames = frames.ToArray();
         }
 
         public int Width { get; }
@@ -62,7 +76,7 @@ namespace WpfAnimatedGif.Formats
 
         public override int CurrentIndex => _frameIndex;
 
-        public override int FrameCount => _file.Frames.Length;
+        public override int FrameCount => _frames.Length;
 
         public override WriteableBitmap Current => _bitmap;
 
@@ -191,20 +205,31 @@ namespace WpfAnimatedGif.Formats
         public DisposeOps DisposalMethod { get; }
         public BlendOps BlendMethod { get; }
 
-        protected PngRendererFrame(Png.ApngFrame frame, TimeSpan begin) :
+        protected PngRendererFrame(ApngFile file, Png.ApngFrame frame, TimeSpan begin) :
             base(
-                (int)frame.fcTLChunk.XOffset,
-                (int)frame.fcTLChunk.YOffset,
-                (int)frame.fcTLChunk.Width,
-                (int)frame.fcTLChunk.Height,
+                (int)Nvl(frame.fcTLChunk?.XOffset, 0u),
+                (int)Nvl(frame.fcTLChunk?.YOffset, 0u),
+                (int)Nvl(frame.fcTLChunk?.Width, (uint)file.IHDRChunk.Width),
+                (int)Nvl(frame.fcTLChunk?.Height, (uint)file.IHDRChunk.Height),
                 begin,
-                begin + frame.fcTLChunk.ComputeDelay())
+                begin + Nvl(frame.fcTLChunk?.ComputeDelay(), TimeSpan.MaxValue))
         {
-            DisposalMethod = frame.fcTLChunk.DisposeOp;
-            BlendMethod = frame.fcTLChunk.BlendOp;
+            if (frame.fcTLChunk is null)
+            {
+                DisposalMethod = DisposeOps.APNGDisposeOpNone;
+                BlendMethod = BlendOps.APNGBlendOpSource;
+            }
+            else
+            {
+                DisposalMethod = frame.fcTLChunk.DisposeOp;
+                BlendMethod = frame.fcTLChunk.BlendOp;
+            }
         }
 
         public abstract void Render(WriteableBitmap bitmap, byte[] work, byte[] backup);
+
+
+        private static T Nvl<T>(T? v1, T v2) where T : struct => v1.HasValue ? v1.Value : v2;
     }
 
     internal class GrayscaleFrame : PngRendererFrame
@@ -220,7 +245,7 @@ namespace WpfAnimatedGif.Formats
         private readonly byte[] _line;
         private readonly byte[] _scale;
 
-        public GrayscaleFrame(ApngFile file, Png.ApngFrame frame, TimeSpan begin) : base(frame, begin)
+        public GrayscaleFrame(ApngFile file, Png.ApngFrame frame, TimeSpan begin) : base(file, frame, begin)
         {
             _data = new IDATStream(file, frame);
 
@@ -259,47 +284,50 @@ namespace WpfAnimatedGif.Formats
                 Array.Copy(work, backup, Width * Height * 4);
             }
 
+            int workIdx = 0;
             for (var i = 0; i < Height; ++i)
             {
                 _data.DecompressLine(_line, 0, _line.Length);
 
-                int j1 = 0;
-                for (var j2 = 0; j2 < Width * 4;)
+                int lineIdx = 0;
+                int workEdIdx = workIdx + Width * 4;
+                while (workIdx < workEdIdx)
                 {
-                    var val = _line[j1++];
-                    var alpha = _hasAlpha ? _line[j1++] : _alphaLevel[val];
+                    var val = _line[lineIdx++];
+                    var alpha = _hasAlpha ? _line[lineIdx++] : _alphaLevel[val];
 
                     var scl = _scale[val];
 
                     if (BlendMethod == BlendOps.APNGBlendOpSource)
                     {
-                        work[j2++] = scl;
-                        work[j2++] = scl;
-                        work[j2++] = scl;
-                        work[j2++] = alpha;
+                        work[workIdx++] = scl;
+                        work[workIdx++] = scl;
+                        work[workIdx++] = scl;
+                        work[workIdx++] = alpha;
                     }
                     else if (BlendMethod == BlendOps.APNGBlendOpOver)
                     {
 
                         if (alpha == 0)
                         {
-                            j2 += 4;
+                            workIdx += 4;
                             continue;
                         }
                         else if (alpha == 0xFF)
                         {
-                            work[j2++] = scl;
-                            work[j2++] = scl;
-                            work[j2++] = scl;
-                            work[j2++] = alpha;
+                            work[workIdx++] = scl;
+                            work[workIdx++] = scl;
+                            work[workIdx++] = scl;
+                            work[workIdx++] = alpha;
                         }
                         else
                         {
-                            work[j2] = (byte)((alpha * scl + (1 - alpha) * work[j2]) >> 8); ++j2;
-                            work[j2] = (byte)((alpha * scl + (1 - alpha) * work[j2]) >> 8); ++j2;
-                            work[j2] = (byte)((alpha * scl + (1 - alpha) * work[j2]) >> 8); ++j2;
-                            work[j2] = alpha;
-                            ++j2;
+                            var overVal = ComputeColorScale(alpha, scl, work[workIdx]); ;
+                            work[workIdx++] = overVal;
+                            work[workIdx++] = overVal;
+                            work[workIdx++] = overVal;
+                            work[workIdx] = ComputeAlphaScale(alpha, work[workIdx]);
+                            ++workIdx;
                         }
                     }
                 }
@@ -308,6 +336,20 @@ namespace WpfAnimatedGif.Formats
             bitmap.WritePixels(Bounds, work, 4 * Bounds.Width, 0);
 
             _data.Reset();
+        }
+
+        static byte ComputeColorScale(byte sa, byte sv, byte dv)
+        {
+            var val = sa * sv + (255 - sa) * dv;
+            val = (val * 2 + 255) / 255 / 2;
+            return (byte)val;
+        }
+
+        static byte ComputeAlphaScale(byte sa, byte dv)
+        {
+            // work[workIdx] = (byte)(alpha + work[workIdx] * (255 - alpha) / 255);
+            var val = ((255 - sa) * dv * 2 + 255) / 255 / 2;
+            return (byte)(sa + val);
         }
     }
 
@@ -318,7 +360,7 @@ namespace WpfAnimatedGif.Formats
         private readonly HashSet<PngColor> _transparencyColor;
         private readonly byte[] _line;
 
-        public ColorFrame(ApngFile file, Png.ApngFrame frame, TimeSpan begin) : base(frame, begin)
+        public ColorFrame(ApngFile file, Png.ApngFrame frame, TimeSpan begin) : base(file, frame, begin)
         {
             _data = new IDATStream(file, frame);
 
@@ -423,7 +465,7 @@ namespace WpfAnimatedGif.Formats
 
         private byte[] _decompress;
 
-        public IndexedFrame(ApngFile file, Png.ApngFrame frame, TimeSpan begin) : base(frame, begin)
+        public IndexedFrame(ApngFile file, Png.ApngFrame frame, TimeSpan begin) : base(file, frame, begin)
         {
             _data = new IDATStream(file, frame);
 
