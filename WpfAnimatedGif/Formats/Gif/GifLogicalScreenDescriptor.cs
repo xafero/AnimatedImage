@@ -5,23 +5,16 @@ namespace WpfAnimatedGif.Formats.Gif
 {
     internal class GifLogicalScreenDescriptor
     {
-        public int Width { get; private set; }
-        public int Height { get; private set; }
-        public bool HasGlobalColorTable { get; private set; }
-        public int ColorResolution { get; private set; }
-        public bool IsGlobalColorTableSorted { get; private set; }
-        public int GlobalColorTableSize { get; private set; }
-        public int BackgroundColorIndex { get; private set; }
-        public double PixelAspectRatio { get; private set; }
+        public int Width { get; }
+        public int Height { get; }
+        public bool HasGlobalColorTable { get; }
+        public int ColorResolution { get; }
+        public bool IsGlobalColorTableSorted { get; }
+        public int GlobalColorTableSize { get; }
+        public int BackgroundColorIndex { get; }
+        public double PixelAspectRatio { get; }
 
-        internal static GifLogicalScreenDescriptor ReadLogicalScreenDescriptor(Stream stream)
-        {
-            var descriptor = new GifLogicalScreenDescriptor();
-            descriptor.Read(stream);
-            return descriptor;
-        }
-
-        private void Read(Stream stream)
+        internal GifLogicalScreenDescriptor(Stream stream)
         {
             byte[] bytes = new byte[7];
             stream.ReadAll(bytes, 0, bytes.Length);

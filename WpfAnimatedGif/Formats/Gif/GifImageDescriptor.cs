@@ -5,27 +5,16 @@ namespace WpfAnimatedGif.Formats.Gif
 {
     internal class GifImageDescriptor
     {
-        public int Left { get; private set; }
-        public int Top { get; private set; }
-        public int Width { get; private set; }
-        public int Height { get; private set; }
-        public bool HasLocalColorTable { get; private set; }
-        public bool Interlace { get; private set; }
-        public bool IsLocalColorTableSorted { get; private set; }
-        public int LocalColorTableSize { get; private set; }
+        public int Left { get; }
+        public int Top { get; }
+        public int Width { get; }
+        public int Height { get; }
+        public bool HasLocalColorTable { get; }
+        public bool Interlace { get; }
+        public bool IsLocalColorTableSorted { get; }
+        public int LocalColorTableSize { get; }
 
-        private GifImageDescriptor()
-        {
-        }
-
-        internal static GifImageDescriptor ReadImageDescriptor(Stream stream)
-        {
-            var descriptor = new GifImageDescriptor();
-            descriptor.Read(stream);
-            return descriptor;
-        }
-
-        private void Read(Stream stream)
+        internal GifImageDescriptor(Stream stream)
         {
             byte[] bytes = new byte[9];
             stream.ReadAll(bytes, 0, bytes.Length);

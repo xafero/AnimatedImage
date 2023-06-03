@@ -6,52 +6,26 @@ namespace WpfAnimatedGif.Formats.Gif
 {
     internal class GifFile
     {
-        public GifHeader Header { get; private set; }
-        public GifColor[] GlobalColorTable { get; set; }
-        public IList<GifFrame> Frames { get; set; }
-        public IList<GifExtension> Extensions { get; set; }
-        public ushort RepeatCount { get; set; }
+        public GifHeader Header { get; }
+        public GifColor[]? GlobalColorTable { get; }
+        public IList<GifFrame> Frames { get; }
+        public IList<GifExtension> Extensions { get; }
+        public ushort RepeatCount { get; }
 
-        private GifFile()
+        internal GifFile(Stream stream)
         {
-        }
+            Header = new GifHeader(stream);
 
-        internal static GifFile ReadGifFile(Stream stream, bool metadataOnly)
-        {
-            var file = new GifFile();
-            file.Read(stream, metadataOnly);
-            return file;
-        }
+            GlobalColorTable = Header.LogicalScreenDescriptor.HasGlobalColorTable ?
+                                GifHelpers.ReadColorTable(stream, Header.LogicalScreenDescriptor.GlobalColorTableSize) :
+                                null;
 
-        private void Read(Stream stream, bool metadataOnly)
-        {
-            Header = GifHeader.ReadHeader(stream);
-
-            if (Header.LogicalScreenDescriptor.HasGlobalColorTable)
-            {
-                GlobalColorTable = GifHelpers.ReadColorTable(stream, Header.LogicalScreenDescriptor.GlobalColorTableSize);
-            }
-            ReadFrames(stream, metadataOnly);
-
-            var netscapeExtension =
-                            Extensions
-                                .OfType<GifApplicationExtension>()
-                                .FirstOrDefault(GifHelpers.IsNetscapeExtension);
-
-            if (netscapeExtension != null)
-                RepeatCount = GifHelpers.GetRepeatCount(netscapeExtension);
-            else
-                RepeatCount = 1;
-        }
-
-        private void ReadFrames(Stream stream, bool metadataOnly)
-        {
-            List<GifFrame> frames = new List<GifFrame>();
-            List<GifExtension> controlExtensions = new List<GifExtension>();
-            List<GifExtension> specialExtensions = new List<GifExtension>();
+            var frames = new List<GifFrame>();
+            var controlExtensions = new List<GifExtension>();
+            var specialExtensions = new List<GifExtension>();
             while (true)
             {
-                var block = GifBlock.ReadBlock(stream, controlExtensions, metadataOnly);
+                var block = GifBlock.ReadBlock(stream, controlExtensions);
 
                 if (block.Kind == GifBlockKind.GraphicRendering)
                     controlExtensions = new List<GifExtension>();
@@ -81,6 +55,16 @@ namespace WpfAnimatedGif.Formats.Gif
 
             Frames = frames.AsReadOnly();
             Extensions = specialExtensions.AsReadOnly();
+
+            var netscapeExtension =
+                            Extensions
+                                .OfType<GifApplicationExtension>()
+                                .FirstOrDefault(GifHelpers.IsNetscapeExtension);
+
+            if (netscapeExtension != null)
+                RepeatCount = GifHelpers.GetRepeatCount(netscapeExtension);
+            else
+                RepeatCount = 1;
         }
     }
 }

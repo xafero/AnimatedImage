@@ -2,12 +2,11 @@
 // Licensed under the MIT License.
 // Ported from: https://github.com/xupefei/APNG.NET
 
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
-
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
+    /// <summary>
+    /// Fragment Data Chunk
+    /// </summary>
     internal class fdATChunk
     {
         internal fdATChunk(ChunkStream cs)
@@ -17,8 +16,8 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
             cs.ReadCrc();
         }
 
-        public uint SequenceNumber { get; private set; }
-        public byte[] FrameData { get; private set; }
+        public uint SequenceNumber { get; }
+        public byte[] FrameData { get; }
 
         public IDATChunk ToIDATChunk()
         {

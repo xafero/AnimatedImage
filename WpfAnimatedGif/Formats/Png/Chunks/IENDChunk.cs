@@ -6,6 +6,9 @@ using System.IO;
 
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
+    /// <summary>
+    /// The last chunk
+    /// </summary>
     internal class IENDChunk
     {
         internal IENDChunk(ChunkStream cs)

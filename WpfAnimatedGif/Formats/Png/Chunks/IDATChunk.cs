@@ -7,6 +7,9 @@ using System.Linq;
 
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
+    /// <summary>
+    /// Image Data
+    /// </summary>
     internal class IDATChunk
     {
         internal IDATChunk(byte[] framedata)
@@ -20,6 +23,6 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
             cs.ReadCrc();
         }
 
-        public byte[] FrameData { get; private set; }
+        public byte[] FrameData { get; }
     }
 }

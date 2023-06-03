@@ -8,40 +8,27 @@ namespace WpfAnimatedGif.Formats.Gif
     {
         internal const int ImageSeparator = 0x2C;
 
-        public GifImageDescriptor Descriptor { get; private set; }
-        public GifColor[] LocalColorTable { get; private set; }
-        public IList<GifExtension> Extensions { get; private set; }
-        public GifImageData ImageData { get; private set; }
+        public GifImageDescriptor Descriptor { get; }
+        public GifColor[]? LocalColorTable { get; }
+        public IList<GifExtension> Extensions { get; }
+        public GifImageData ImageData { get; }
 
-        private GifFrame()
+        internal GifFrame(Stream stream, IEnumerable<GifExtension> controlExtensions)
         {
+            // Note: at this point, the Image Separator (0x2C) has already been read
+
+            Descriptor = new GifImageDescriptor(stream);
+            LocalColorTable = Descriptor.HasLocalColorTable ?
+                                GifHelpers.ReadColorTable(stream, Descriptor.LocalColorTableSize) :
+                                null;
+
+            ImageData = new GifImageData(this, stream);
+            Extensions = controlExtensions.ToList().AsReadOnly();
         }
 
         internal override GifBlockKind Kind
         {
             get { return GifBlockKind.GraphicRendering; }
-        }
-
-        internal static GifFrame ReadFrame(Stream stream, IEnumerable<GifExtension> controlExtensions, bool metadataOnly)
-        {
-            var frame = new GifFrame();
-
-            frame.Read(stream, controlExtensions, metadataOnly);
-
-            return frame;
-        }
-
-        private void Read(Stream stream, IEnumerable<GifExtension> controlExtensions, bool metadataOnly)
-        {
-            // Note: at this point, the Image Separator (0x2C) has already been read
-
-            Descriptor = GifImageDescriptor.ReadImageDescriptor(stream);
-            if (Descriptor.HasLocalColorTable)
-            {
-                LocalColorTable = GifHelpers.ReadColorTable(stream, Descriptor.LocalColorTableSize);
-            }
-            ImageData = GifImageData.ReadImageData(this, stream, metadataOnly);
-            Extensions = controlExtensions.ToList().AsReadOnly();
         }
     }
 }

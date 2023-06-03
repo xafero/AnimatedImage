@@ -7,20 +7,22 @@ using System.Threading.Tasks;
 
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
+    /// <summary>
+    /// Color Palette Chunk
+    /// </summary>
     internal class PLTEChunk
     {
-        private PngColor[] _colors;
-        public PngColor[] Colors => _colors;
+        public PngColor[] Colors { get; }
 
         internal PLTEChunk(ChunkStream cs)
         {
             int length = (int)cs.Length / 3;
 
-            _colors = new PngColor[length];
+            Colors = new PngColor[length];
 
             for (var i = 0; i < length; ++i)
             {
-                _colors[i] = new PngColor(
+                Colors[i] = new PngColor(
                     (byte)cs.ReadByte(),
                     (byte)cs.ReadByte(),
                     (byte)cs.ReadByte());
@@ -31,7 +33,7 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
 
     }
 
-    public struct PngColor
+    internal struct PngColor
     {
         public byte R { get; }
         public byte G { get; }

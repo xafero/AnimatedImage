@@ -8,31 +8,14 @@ namespace WpfAnimatedGif.Formats.Gif
     {
         internal const int ExtensionLabel = 0xF9;
 
-        public int BlockSize { get; private set; }
-        public int DisposalMethod { get; private set; }
-        public bool UserInput { get; private set; }
-        public bool HasTransparency { get; private set; }
-        public int Delay { get; private set; }
-        public int TransparencyIndex { get; private set; }
+        public int BlockSize { get; }
+        public int DisposalMethod { get; }
+        public bool UserInput { get; }
+        public bool HasTransparency { get; }
+        public int Delay { get; }
+        public int TransparencyIndex { get; }
 
-        private GifGraphicControlExtension()
-        {
-
-        }
-
-        internal override GifBlockKind Kind
-        {
-            get { return GifBlockKind.Control; }
-        }
-
-        internal static GifGraphicControlExtension ReadGraphicsControl(Stream stream)
-        {
-            var ext = new GifGraphicControlExtension();
-            ext.Read(stream);
-            return ext;
-        }
-
-        private void Read(Stream stream)
+        internal GifGraphicControlExtension(Stream stream)
         {
             // Note: at this point, the label (0xF9) has already been read
 
@@ -47,6 +30,11 @@ namespace WpfAnimatedGif.Formats.Gif
             HasTransparency = (packedFields & 0x01) != 0;
             Delay = BitConverter.ToUInt16(bytes, 2) * 10; // milliseconds
             TransparencyIndex = bytes[4];
+        }
+
+        internal override GifBlockKind Kind
+        {
+            get { return GifBlockKind.Control; }
         }
     }
 }

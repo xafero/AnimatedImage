@@ -7,10 +7,17 @@ namespace WpfAnimatedGif.Formats.Gif
     {
         internal const int ExtensionLabel = 0xFE;
 
-        public string Text { get; private set; }
+        public string? Text { get; }
 
-        private GifCommentExtension()
+        private GifCommentExtension(Stream stream)
         {
+            // Note: at this point, the label (0xFE) has already been read
+
+            var bytes = GifHelpers.ReadDataBlocks(stream);
+
+            Text = bytes is not null ?
+                    Encoding.ASCII.GetString(bytes) :
+                    null;
         }
 
         internal override GifBlockKind Kind
@@ -20,18 +27,7 @@ namespace WpfAnimatedGif.Formats.Gif
 
         internal static GifCommentExtension ReadComment(Stream stream)
         {
-            var comment = new GifCommentExtension();
-            comment.Read(stream);
-            return comment;
-        }
-
-        private void Read(Stream stream)
-        {
-            // Note: at this point, the label (0xFE) has already been read
-
-            var bytes = GifHelpers.ReadDataBlocks(stream, false);
-            if (bytes != null)
-                Text = Encoding.ASCII.GetString(bytes);
+            return new GifCommentExtension(stream);
         }
     }
 }

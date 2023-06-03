@@ -4,18 +4,13 @@ namespace WpfAnimatedGif.Formats.Gif
     {
         internal const int TrailerByte = 0x3B;
 
-        private GifTrailer()
+        internal GifTrailer()
         {
         }
 
         internal override GifBlockKind Kind
         {
             get { return GifBlockKind.Other; }
-        }
-
-        internal static GifTrailer ReadTrailer()
-        {
-            return new GifTrailer();
         }
     }
 }

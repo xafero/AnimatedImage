@@ -2,8 +2,6 @@
 // Licensed under the MIT License.
 // Ported from: https://github.com/xupefei/APNG.NET
 
-using System.IO;
-
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
     /// <summary>

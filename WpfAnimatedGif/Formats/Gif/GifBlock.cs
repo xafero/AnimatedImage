@@ -5,7 +5,7 @@ namespace WpfAnimatedGif.Formats.Gif
 {
     internal abstract class GifBlock
     {
-        internal static GifBlock ReadBlock(Stream stream, IEnumerable<GifExtension> controlExtensions, bool metadataOnly)
+        internal static GifBlock ReadBlock(Stream stream, IEnumerable<GifExtension> controlExtensions)
         {
             int blockId = stream.ReadByte();
             if (blockId < 0)
@@ -13,11 +13,11 @@ namespace WpfAnimatedGif.Formats.Gif
             switch (blockId)
             {
                 case GifExtension.ExtensionIntroducer:
-                    return GifExtension.ReadExtension(stream, controlExtensions, metadataOnly);
+                    return GifExtension.ReadExtension(stream, controlExtensions);
                 case GifFrame.ImageSeparator:
-                    return GifFrame.ReadFrame(stream, controlExtensions, metadataOnly);
+                    return new GifFrame(stream, controlExtensions);
                 case GifTrailer.TrailerByte:
-                    return GifTrailer.ReadTrailer();
+                    return new GifTrailer();
                 default:
                     throw GifHelpers.UnknownBlockTypeException(blockId);
             }

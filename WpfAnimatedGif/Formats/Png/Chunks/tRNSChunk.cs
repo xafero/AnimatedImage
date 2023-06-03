@@ -22,16 +22,15 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
                 case Types.ColorType.IndexedColor:
                     return new tRNSIndexChunk(cs);
 
-
                 default:
-                    return null;
+                    throw new ArgumentException("unsupport color type: " + ihdr.ColorType);
             }
         }
     }
 
     internal class tRNSGrayscaleChunk : tRNSChunk
     {
-        public ushort[] AlphaForEachGrayLevel { private set; get; }
+        public ushort[] AlphaForEachGrayLevel { get; }
 
         internal tRNSGrayscaleChunk(ChunkStream cs)
         {
@@ -48,7 +47,7 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
 
     internal class tRNSColorChunk : tRNSChunk
     {
-        public PngColor[] TransparencyColors { private set; get; }
+        public PngColor[] TransparencyColors { get; }
 
         internal tRNSColorChunk(ChunkStream cs)
         {
@@ -74,7 +73,7 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
 
     internal class tRNSIndexChunk : tRNSChunk
     {
-        public byte[] AlphaForEachIndex { private set; get; }
+        public byte[] AlphaForEachIndex { get; }
 
         internal tRNSIndexChunk(ChunkStream cs)
         {

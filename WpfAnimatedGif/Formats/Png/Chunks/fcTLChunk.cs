@@ -33,47 +33,47 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
         /// <summary>
         ///     Sequence number of the animation chunk, starting from 0
         /// </summary>
-        public uint SequenceNumber { get; private set; }
+        public uint SequenceNumber { get; }
 
         /// <summary>
         ///     Width of the following frame
         /// </summary>
-        public uint Width { get; private set; }
+        public uint Width { get; }
 
         /// <summary>
         ///     Height of the following frame
         /// </summary>
-        public uint Height { get; private set; }
+        public uint Height { get; }
 
         /// <summary>
         ///     X position at which to render the following frame
         /// </summary>
-        public uint XOffset { get; private set; }
+        public uint XOffset { get; }
 
         /// <summary>
         ///     Y position at which to render the following frame
         /// </summary>
-        public uint YOffset { get; private set; }
+        public uint YOffset { get; }
 
         /// <summary>
         ///     Frame delay fraction numerator
         /// </summary>
-        public ushort DelayNum { get; private set; }
+        public ushort DelayNum { get; }
 
         /// <summary>
         ///     Frame delay fraction denominator
         /// </summary>
-        public ushort DelayDen { get; private set; }
+        public ushort DelayDen { get; }
 
         /// <summary>
         ///     Type of frame area disposal to be done after rendering this frame
         /// </summary>
-        public DisposeOps DisposeOp { get; private set; }
+        public DisposeOps DisposeOp { get; }
 
         /// <summary>
         ///     Type of frame area rendering for this frame
         /// </summary>
-        public BlendOps BlendOp { get; private set; }
+        public BlendOps BlendOp { get; }
 
         /// <summary>
         ///     Compute delay time from DelayNum and DlayDen

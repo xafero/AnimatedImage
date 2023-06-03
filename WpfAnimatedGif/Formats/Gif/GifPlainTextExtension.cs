@@ -11,36 +11,20 @@ namespace WpfAnimatedGif.Formats.Gif
     {
         internal const int ExtensionLabel = 0x01;
 
-        public int BlockSize { get; private set; }
-        public int Left { get; private set; }
-        public int Top { get; private set; }
-        public int Width { get; private set; }
-        public int Height { get; private set; }
-        public int CellWidth { get; private set; }
-        public int CellHeight { get; private set; }
-        public int ForegroundColorIndex { get; private set; }
-        public int BackgroundColorIndex { get; private set; }
-        public string Text { get; private set; }
+        public int BlockSize { get; }
+        public int Left { get; }
+        public int Top { get; }
+        public int Width { get; }
+        public int Height { get; }
+        public int CellWidth { get; }
+        public int CellHeight { get; }
+        public int ForegroundColorIndex { get; }
+        public int BackgroundColorIndex { get; }
+        public string Text { get; }
 
-        public IList<GifExtension> Extensions { get; private set; }
+        public IList<GifExtension> Extensions { get; }
 
-        private GifPlainTextExtension()
-        {
-        }
-
-        internal override GifBlockKind Kind
-        {
-            get { return GifBlockKind.GraphicRendering; }
-        }
-
-        internal static GifPlainTextExtension ReadPlainText(Stream stream, IEnumerable<GifExtension> controlExtensions, bool metadataOnly)
-        {
-            var plainText = new GifPlainTextExtension();
-            plainText.Read(stream, controlExtensions, metadataOnly);
-            return plainText;
-        }
-
-        private void Read(Stream stream, IEnumerable<GifExtension> controlExtensions, bool metadataOnly)
+        internal GifPlainTextExtension(Stream stream, IEnumerable<GifExtension> controlExtensions)
         {
             // Note: at this point, the label (0x01) has already been read
 
@@ -60,9 +44,14 @@ namespace WpfAnimatedGif.Formats.Gif
             ForegroundColorIndex = bytes[11];
             BackgroundColorIndex = bytes[12];
 
-            var dataBytes = GifHelpers.ReadDataBlocks(stream, metadataOnly);
+            var dataBytes = GifHelpers.ReadDataBlocks(stream);
             Text = Encoding.ASCII.GetString(dataBytes);
             Extensions = controlExtensions.ToList().AsReadOnly();
+        }
+
+        internal override GifBlockKind Kind
+        {
+            get { return GifBlockKind.GraphicRendering; }
         }
     }
 }

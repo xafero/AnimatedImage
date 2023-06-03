@@ -4,27 +4,11 @@ namespace WpfAnimatedGif.Formats.Gif
 {
     internal class GifHeader : GifBlock
     {
-        public string Signature { get; private set; }
-        public string Version { get; private set; }
-        public GifLogicalScreenDescriptor LogicalScreenDescriptor { get; private set; }
+        public string Signature { get; }
+        public string Version { get; }
+        public GifLogicalScreenDescriptor LogicalScreenDescriptor { get; }
 
-        private GifHeader()
-        {
-        }
-
-        internal override GifBlockKind Kind
-        {
-            get { return GifBlockKind.Other; }
-        }
-
-        internal static GifHeader ReadHeader(Stream stream)
-        {
-            var header = new GifHeader();
-            header.Read(stream);
-            return header;
-        }
-
-        private void Read(Stream stream)
+        internal GifHeader(Stream stream)
         {
             Signature = GifHelpers.ReadString(stream, 3);
             if (Signature != "GIF")
@@ -32,7 +16,12 @@ namespace WpfAnimatedGif.Formats.Gif
             Version = GifHelpers.ReadString(stream, 3);
             if (Version != "87a" && Version != "89a")
                 throw GifHelpers.UnsupportedVersionException(Version);
-            LogicalScreenDescriptor = GifLogicalScreenDescriptor.ReadLogicalScreenDescriptor(stream);
+            LogicalScreenDescriptor = new GifLogicalScreenDescriptor(stream);
+        }
+
+        internal override GifBlockKind Kind
+        {
+            get { return GifBlockKind.Other; }
         }
     }
 }

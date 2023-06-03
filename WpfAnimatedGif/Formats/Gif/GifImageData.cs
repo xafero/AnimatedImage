@@ -9,29 +9,17 @@ namespace WpfAnimatedGif.Formats.Gif
         private static readonly int MaxStackSize = 4096;
         private static readonly int MaxBits = 4097;
 
-        internal static GifImageData ReadImageData(GifFrame frame, Stream stream, bool metadataOnly)
-        {
-            var imgData = new GifImageData();
-            imgData.Read(stream, metadataOnly);
-            imgData.TotalPixels = frame.Descriptor.Width * frame.Descriptor.Height;
-            return imgData;
-        }
+        public int TotalPixels { get; }
+        public byte LzwMinimumCodeSize { get; }
+        public byte[] CompressedData { get; }
 
-        private byte[] _decompressData;
-
-        public int TotalPixels { get; set; }
-        public byte LzwMinimumCodeSize { get; set; }
-        public byte[] CompressedData { get; set; }
-
-        private GifImageData()
-        {
-        }
-
-        private void Read(Stream stream, bool metadataOnly)
+        internal GifImageData(GifFrame frame, Stream stream)
         {
             LzwMinimumCodeSize = (byte)stream.ReadByte();
-            CompressedData = GifHelpers.ReadDataBlocks(stream, metadataOnly);
+            CompressedData = GifHelpers.ReadDataBlocks(stream);
+            TotalPixels = frame.Descriptor.Width * frame.Descriptor.Height;
         }
+
 
         public byte[] Decompress()
         {

@@ -11,6 +11,10 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
 {
     internal class IHDRChunk
     {
+        /// <summary>
+        /// Image Header Chunk
+        /// </summary>
+        /// <param name="cs"></param>
         internal IHDRChunk(ChunkStream cs)
         {
             Width = cs.ReadInt32();

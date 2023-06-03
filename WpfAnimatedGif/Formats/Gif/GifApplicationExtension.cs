@@ -9,28 +9,12 @@ namespace WpfAnimatedGif.Formats.Gif
     {
         internal const int ExtensionLabel = 0xFF;
 
-        public int BlockSize { get; private set; }
-        public string ApplicationIdentifier { get; private set; }
-        public byte[] AuthenticationCode { get; private set; }
-        public byte[] Data { get; private set; }
+        public int BlockSize { get; }
+        public string ApplicationIdentifier { get; }
+        public byte[] AuthenticationCode { get; }
+        public byte[] Data { get; }
 
-        private GifApplicationExtension()
-        {
-        }
-
-        internal override GifBlockKind Kind
-        {
-            get { return GifBlockKind.SpecialPurpose; }
-        }
-
-        internal static GifApplicationExtension ReadApplication(Stream stream)
-        {
-            var ext = new GifApplicationExtension();
-            ext.Read(stream);
-            return ext;
-        }
-
-        private void Read(Stream stream)
+        internal GifApplicationExtension(Stream stream)
         {
             // Note: at this point, the label (0xFF) has already been read
 
@@ -44,7 +28,12 @@ namespace WpfAnimatedGif.Formats.Gif
             byte[] authCode = new byte[3];
             Array.Copy(bytes, 9, authCode, 0, 3);
             AuthenticationCode = authCode;
-            Data = GifHelpers.ReadDataBlocks(stream, false);
+            Data = GifHelpers.ReadDataBlocks(stream);
+        }
+
+        internal override GifBlockKind Kind
+        {
+            get { return GifBlockKind.SpecialPurpose; }
         }
     }
 }

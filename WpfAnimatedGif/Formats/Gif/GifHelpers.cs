@@ -13,23 +13,19 @@ namespace WpfAnimatedGif.Formats.Gif
             return Encoding.ASCII.GetString(bytes);
         }
 
-        public static byte[] ReadDataBlocks(Stream stream, bool discard)
+        public static byte[] ReadDataBlocks(Stream stream)
         {
-            MemoryStream ms = discard ? null : new MemoryStream();
-            using (ms)
+            using var ms = new MemoryStream();
+
+            int len;
+            while ((len = stream.ReadByte()) > 0)
             {
-                int len;
-                while ((len = stream.ReadByte()) > 0)
-                {
-                    byte[] bytes = new byte[len];
-                    stream.ReadAll(bytes, 0, len);
-                    if (ms != null)
-                        ms.Write(bytes, 0, len);
-                }
-                if (ms != null)
-                    return ms.ToArray();
-                return null;
+                byte[] bytes = new byte[len];
+                stream.ReadAll(bytes, 0, len);
+                ms.Write(bytes, 0, len);
             }
+
+            return ms.ToArray();
         }
 
         public static GifColor[] ReadColorTable(Stream stream, int size)

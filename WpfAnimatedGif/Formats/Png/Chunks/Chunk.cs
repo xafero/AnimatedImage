@@ -8,12 +8,15 @@ using System.Text;
 
 namespace WpfAnimatedGif.Formats.Png.Chunks
 {
+    /// <summary>
+    /// A chunk not handled in this project
+    /// </summary>
     internal class Chunk
     {
         internal Chunk(ChunkStream cs)
         {
             Length = cs.Length;
-            ChunkType = cs.ChunkType ;
+            ChunkType = cs.ChunkType;
             ChunkData = cs.ReadBytes((int)Length);
             Crc = cs.ReadCrc();
         }

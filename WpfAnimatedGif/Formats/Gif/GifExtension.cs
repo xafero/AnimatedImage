@@ -7,7 +7,7 @@ namespace WpfAnimatedGif.Formats.Gif
     {
         internal const int ExtensionIntroducer = 0x21;
 
-        internal static GifExtension ReadExtension(Stream stream, IEnumerable<GifExtension> controlExtensions, bool metadataOnly)
+        internal static GifExtension ReadExtension(Stream stream, IEnumerable<GifExtension> controlExtensions)
         {
             // Note: at this point, the Extension Introducer (0x21) has already been read
 
@@ -17,13 +17,13 @@ namespace WpfAnimatedGif.Formats.Gif
             switch (label)
             {
                 case GifGraphicControlExtension.ExtensionLabel:
-                    return GifGraphicControlExtension.ReadGraphicsControl(stream);
+                    return new GifGraphicControlExtension(stream);
                 case GifCommentExtension.ExtensionLabel:
                     return GifCommentExtension.ReadComment(stream);
                 case GifPlainTextExtension.ExtensionLabel:
-                    return GifPlainTextExtension.ReadPlainText(stream, controlExtensions, metadataOnly);
+                    return new GifPlainTextExtension(stream, controlExtensions);
                 case GifApplicationExtension.ExtensionLabel:
-                    return GifApplicationExtension.ReadApplication(stream);
+                    return new GifApplicationExtension(stream);
                 default:
                     throw GifHelpers.UnknownExtensionTypeException(label);
             }
