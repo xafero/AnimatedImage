@@ -97,8 +97,10 @@ namespace WpfAnimatedGif.Formats.Png
                     break;
 
                 case FilterMethod.Average:
-                    bytes[offset] = (byte)(bytes[offset] + (_prevLine[0] >> 1));
-
+                    for (var i = 0; i < _dimension; ++i)
+                    {
+                        bytes[i + offset] = (byte)(bytes[i + offset] + (_prevLine[i] >> 1));
+                    }
                     for (var i = _dimension; i < length; ++i)
                     {
                         var avg = (bytes[i + offset - _dimension] + _prevLine[i]) >> 1;
@@ -107,8 +109,10 @@ namespace WpfAnimatedGif.Formats.Png
                     break;
 
                 case FilterMethod.Paeth:
-                    bytes[offset] = (byte)(bytes[offset] + Paeth(0, _prevLine[0], 0));
-
+                    for (var i = 0; i < _dimension; ++i)
+                    {
+                        bytes[i + offset] = (byte)(bytes[i + offset] + Paeth(0, _prevLine[i], 0));
+                    }
                     for (var i = _dimension; i < length; ++i)
                     {
                         var val = Paeth(bytes[i + offset - _dimension], _prevLine[i], _prevLine[i - _dimension]);
