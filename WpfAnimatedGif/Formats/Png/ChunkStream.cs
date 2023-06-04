@@ -7,6 +7,10 @@ using System.Threading.Tasks;
 
 namespace WpfAnimatedGif.Formats.Png
 {
+    /// <summary>
+    /// The class for simplifying the reading of Chunk data.
+    /// This provides digits that are converted from BigEndian(PNG) to LittleEndian(.NET).
+    /// </summary>
     internal class ChunkStream
     {
         private Stream _stream;
@@ -20,6 +24,7 @@ namespace WpfAnimatedGif.Formats.Png
         }
 
         public string ChunkType => _chunkType;
+
         public uint Length { get; private set; }
 
         public string? ReadChunkType()

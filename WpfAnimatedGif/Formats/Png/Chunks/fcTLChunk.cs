@@ -12,10 +12,12 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
 {
 
     /// <summary>
-    /// Frame Copntrol Chunk
+    /// Frame Control Chunk
     /// </summary>
     internal class fcTLChunk
     {
+        public const string ChunkType = "fcTL";
+
         internal fcTLChunk(ChunkStream cs)
         {
             SequenceNumber = cs.ReadUInt32();

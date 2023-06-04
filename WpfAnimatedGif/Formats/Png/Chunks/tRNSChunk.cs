@@ -9,6 +9,8 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
 {
     internal abstract class tRNSChunk
     {
+        public const string ChunkType = "tRNS";
+
         internal static tRNSChunk Create(IHDRChunk ihdr, ChunkStream cs)
         {
             switch (ihdr.ColorType)

@@ -24,8 +24,10 @@ namespace WpfAnimatedGif.Demo
                           "pack://application:,,,/images/radar.gif",
                           "pack://application:,,,/images/bomb.gif",
                           "pack://application:,,,/images/bomb-once.gif",
-                          "pack://application:,,,/images/nonanimated.png",
                           "pack://application:,,,/images/monster.gif",
+                          "pack://application:,,,/images/nonanimated.gif",
+                          "pack://application:,,,/images/nonanimated.png",
+                          "pack://application:,,,/images/UnsupportImageFormat.bmp",
                           "pack://siteoforigin:,,,/images/siteoforigin.gif",
                           "pack://application:,,,/images/partialfirstframe.gif",
                           "http://i.imgur.com/rCK6xzh.gif"

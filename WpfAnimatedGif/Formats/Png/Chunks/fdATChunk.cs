@@ -9,6 +9,8 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
     /// </summary>
     internal class fdATChunk
     {
+        public const string ChunkType = "fdAT";
+
         internal fdATChunk(ChunkStream cs)
         {
             SequenceNumber = cs.ReadUInt32();

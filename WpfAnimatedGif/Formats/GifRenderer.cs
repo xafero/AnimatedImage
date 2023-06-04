@@ -188,9 +188,9 @@ namespace WpfAnimatedGif.Formats
                    frame.Descriptor.Width, frame.Descriptor.Height,
                    begin, end)
         {
-            _colorTable = frame.Descriptor.HasLocalColorTable ?
-                                    frame.LocalColorTable :
-                                    file.GlobalColorTable;
+            _colorTable = frame.LocalColorTable
+                       ?? file.GlobalColorTable
+                       ?? throw new FormatException("ColorTable not found");
             _data = frame.ImageData;
             _transparencyIndex = transparencyIndex;
 

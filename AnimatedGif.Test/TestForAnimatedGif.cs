@@ -29,7 +29,7 @@ namespace AnimatedGif.Test
         public void Sequence(string filename)
         {
             var imageStream = Open(filename);
-            var giffile = GifFile.ReadGifFile(imageStream, false);
+            var giffile = new GifFile(imageStream);
             var renderer = new GifRenderer(giffile);
 
             for (int i = 0; i < renderer.FrameCount; ++i)
@@ -61,7 +61,7 @@ namespace AnimatedGif.Test
         public void Jump(string filename)
         {
             var imageStream = Open(filename);
-            var giffile = GifFile.ReadGifFile(imageStream, false);
+            var giffile = new GifFile(imageStream);
             var renderer = new GifRenderer(giffile);
 
             var indics = new List<int>();

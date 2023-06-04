@@ -61,7 +61,7 @@ namespace WpfAnimatedGif.Formats
                     if (frame.Decoder is GifBitmapDecoder)
                     {
                         stream.Position = 0;
-                        renderer = new GifRenderer(GifFile.ReadGifFile(stream, false));
+                        renderer = new GifRenderer(new GifFile(stream));
                         return true;
                     }
 
@@ -107,7 +107,7 @@ namespace WpfAnimatedGif.Formats
             stream.Position = 0;
             if (Signature.IsGifSignature(magic))
             {
-                var gif = GifFile.ReadGifFile(stream, false);
+                var gif = new GifFile(stream);
                 renderer = new GifRenderer(gif);
                 return true;
             }

@@ -18,6 +18,8 @@
     <Resource Include="Images\earth.gif" />
     <Resource Include="Images\monster.gif" />
     <Resource Include="Images\nonanimated.png" />
+    <Resource Include="Images\nonanimated.gif" />
+    <Resource Include="Images\UnsupportImageFormat.bmp" />
     <Resource Include="Images\partialfirstframe.gif" />
     <Resource Include="Images\pause.png" />
     <Resource Include="Images\play.png" />

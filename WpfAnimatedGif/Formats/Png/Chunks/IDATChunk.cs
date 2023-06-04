@@ -12,6 +12,8 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
     /// </summary>
     internal class IDATChunk
     {
+        public const string ChunkType = "IDAT";
+
         internal IDATChunk(byte[] framedata)
         {
             FrameData = framedata;

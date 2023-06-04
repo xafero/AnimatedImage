@@ -12,6 +12,8 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
     /// </summary>
     internal class PLTEChunk
     {
+        public const string ChunkType = "PLTE";
+
         public PngColor[] Colors { get; }
 
         internal PLTEChunk(ChunkStream cs)

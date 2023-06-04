@@ -14,18 +14,17 @@ namespace WpfAnimatedGif.Formats
     {
         private ApngFile _file;
         private int _frameIndex = -1;
-        private WriteableBitmap _bitmap;
-        private PngRendererFrame[] _frames;
+        private readonly WriteableBitmap _bitmap;
+        private readonly PngRendererFrame[] _frames;
 
-        private byte[] _work;
+        private readonly byte[] _work;
 
         // variables for RestorePrevious
-        private byte[] _restorePixels;
+        private readonly byte[] _restorePixels;
         private PngRendererFrame _previouns;
 
         // variables for RestoreBackground
         private FrameRenderFrame _background;
-        private readonly FrameRenderFrame _fullFrame;
 
         public PngRenderer(ApngFile file)
         {
@@ -212,7 +211,7 @@ namespace WpfAnimatedGif.Formats
                 (int)Nvl(frame.fcTLChunk?.Width, (uint)file.IHDRChunk.Width),
                 (int)Nvl(frame.fcTLChunk?.Height, (uint)file.IHDRChunk.Height),
                 begin,
-                begin + Nvl(frame.fcTLChunk?.ComputeDelay(), TimeSpan.MaxValue))
+                begin + Nvl(frame.fcTLChunk?.ComputeDelay(), TimeSpan.FromMilliseconds(100)))
         {
             if (frame.fcTLChunk is null)
             {

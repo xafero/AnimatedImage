@@ -11,6 +11,8 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
 {
     internal class IHDRChunk
     {
+        public const string ChunkType = "IHDR";
+
         /// <summary>
         /// Image Header Chunk
         /// </summary>

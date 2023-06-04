@@ -53,17 +53,17 @@ namespace WpfAnimatedGif.Formats.Png
                     case null:
                         throw new Exception("IEND chunk expected.");
 
-                    case "IHDR":
+                    case IHDRChunk.ChunkType:
                         throw new Exception("Only single IHDR is allowed.");
 
-                    case "acTL":
+                    case acTLChunk.ChunkType:
                         if (IsSimplePNG)
                             throw new Exception("acTL chunk must located before any IDAT and fdAT");
 
                         acTLChunk = new acTLChunk(chunkStream);
                         break;
 
-                    case "IDAT":
+                    case IDATChunk.ChunkType:
                         // To be an APNG, acTL must located before any IDAT and fdAT.
                         if (acTLChunk == null)
                             IsSimplePNG = true;
@@ -74,7 +74,7 @@ namespace WpfAnimatedGif.Formats.Png
                         isIDATAlreadyParsed = true;
                         break;
 
-                    case "fcTL":
+                    case fcTLChunk.ChunkType:
                         // Simple PNG should ignore this.
                         if (IsSimplePNG)
                             continue;
@@ -102,7 +102,7 @@ namespace WpfAnimatedGif.Formats.Png
                         }
                         break;
 
-                    case "fdAT":
+                    case fdATChunk.ChunkType:
                         // Simple PNG should ignore this.
                         if (IsSimplePNG)
                             continue;
@@ -114,11 +114,11 @@ namespace WpfAnimatedGif.Formats.Png
                         frame.AddIDATChunk(new fdATChunk(chunkStream).ToIDATChunk());
                         break;
 
-                    case "PLTE":
+                    case PLTEChunk.ChunkType:
                         PLTEChunk = new PLTEChunk(chunkStream);
                         break;
 
-                    case "tRNS":
+                    case tRNSChunk.ChunkType:
                         if (IHDRChunk is null)
                         {
                             throw new Exception("IHDR chunk expected");
@@ -127,7 +127,7 @@ namespace WpfAnimatedGif.Formats.Png
                         tRNSChunk = tRNSChunk.Create(IHDRChunk, chunkStream);
                         break;
 
-                    case "IEND":
+                    case IENDChunk.ChunkType:
                         // register last frame object
                         if (frame != null)
                             frames.Add(frame);
@@ -200,10 +200,10 @@ namespace WpfAnimatedGif.Formats.Png
         /// <summary>
         ///     Gets the acTL Chunk
         /// </summary>
-        public acTLChunk acTLChunk { get; private set; }
+        public acTLChunk? acTLChunk { get; private set; }
 
-        public PLTEChunk PLTEChunk { get; private set; }
+        public PLTEChunk? PLTEChunk { get; private set; }
 
-        public tRNSChunk tRNSChunk { get; private set; }
+        public tRNSChunk? tRNSChunk { get; private set; }
     }
 }

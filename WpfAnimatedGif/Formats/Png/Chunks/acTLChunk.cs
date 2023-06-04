@@ -9,6 +9,8 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
     /// </summary>
     internal class acTLChunk
     {
+        public const string ChunkType = "acTL";
+
         internal acTLChunk(ChunkStream cs)
         {
             NumFrames = cs.ReadUInt32();

@@ -11,6 +11,8 @@ namespace WpfAnimatedGif.Formats.Png.Chunks
     /// </summary>
     internal class IENDChunk
     {
+        public const string ChunkType = "IEND";
+
         internal IENDChunk(ChunkStream cs)
         {
             cs.ReadCrc();
