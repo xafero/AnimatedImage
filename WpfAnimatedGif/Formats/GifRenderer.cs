@@ -10,25 +10,22 @@ namespace WpfAnimatedGif.Formats
 {
     internal class GifRenderer : FrameRenderer
     {
-        private GifFile _file;
         private int _frameIndex = -1;
-        private WriteableBitmap _bitmap;
-        private GifRendererFrame[] _frames;
+        private readonly WriteableBitmap _bitmap;
+        private readonly GifRendererFrame[] _frames;
 
-        private byte[] _work;
+        private readonly byte[] _work;
 
         // variables for RestorePrevious
-        private byte[] _restorePixels;
-        private GifRendererFrame _previouns;
+        private readonly byte[] _restorePixels;
+        private GifRendererFrame? _previouns;
 
         // variables for RestoreBackground
-        private FrameRenderFrame _background;
+        private FrameRenderFrame? _background;
         private readonly FrameRenderFrame _fullFrame;
 
         public GifRenderer(GifFile file)
         {
-            _file = file;
-
             var descriptor = file.Header.LogicalScreenDescriptor;
             Width = descriptor.Width;
             Height = descriptor.Height;
@@ -49,8 +46,27 @@ namespace WpfAnimatedGif.Formats
                 frames.Add(frame);
             }
 
-            Duration = span;
             _frames = frames.ToArray();
+
+            Duration = span;
+            FrameCount = file.Frames.Count;
+            RepeatCount = file.RepeatCount;
+        }
+
+        private GifRenderer(GifRenderer renderer)
+        {
+            Width = renderer.Width;
+            Height = renderer.Height;
+
+            _fullFrame = _background = new FrameRenderFrame(0, 0, Width, Height, TimeSpan.Zero, TimeSpan.Zero);
+            _bitmap = new WriteableBitmap(Width, Height, 96, 96, PixelFormats.Pbgra32, null);
+            _restorePixels = new byte[Width * Height * 4];
+            _work = new byte[Width * Height * 4];
+            _frames = renderer._frames.ToArray();
+
+            Duration = renderer.Duration;
+            FrameCount = renderer.FrameCount;
+            RepeatCount = renderer.RepeatCount;
         }
 
         public int Width { get; }
@@ -59,13 +75,13 @@ namespace WpfAnimatedGif.Formats
 
         public override int CurrentIndex => _frameIndex;
 
-        public override int FrameCount => _file.Frames.Count;
+        public override int FrameCount { get; }
 
         public override WriteableBitmap Current => _bitmap;
 
         public override TimeSpan Duration { get; }
 
-        public override int RepeatCount => _file.RepeatCount;
+        public override int RepeatCount { get; }
 
         protected override FrameRenderFrame this[int idx] => _frames[idx];
 
@@ -157,7 +173,7 @@ namespace WpfAnimatedGif.Formats
 
         public override TimeSpan GetStartTime(int idx) => _frames[idx].Begin;
 
-        public override FrameRenderer Clone() => new GifRenderer(_file);
+        public override FrameRenderer Clone() => new GifRenderer(this);
 
         private static void Clear(WriteableBitmap bitmap, int x, int y, int width, int height)
         {
@@ -174,10 +190,10 @@ namespace WpfAnimatedGif.Formats
     {
         public FrameDisposalMethod DisposalMethod { get; }
 
-        private GifColor[] _colorTable;
-        private GifImageData _data;
-        private int _transparencyIndex;
-        private byte[] _decompress;
+        private readonly GifColor[] _colorTable;
+        private readonly GifImageData _data;
+        private readonly int _transparencyIndex;
+        private byte[]? _decompress;
 
         public GifRendererFrame(
                 GifFile file, GifFrame frame,
@@ -197,7 +213,7 @@ namespace WpfAnimatedGif.Formats
             DisposalMethod = method;
         }
 
-        public void Render(WriteableBitmap bitmap, byte[] work, byte[] backup)
+        public void Render(WriteableBitmap bitmap, byte[] work, byte[]? backup)
         {
             if (_decompress is null)
             {

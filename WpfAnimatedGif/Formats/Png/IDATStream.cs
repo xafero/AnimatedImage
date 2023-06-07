@@ -30,8 +30,8 @@ namespace WpfAnimatedGif.Formats.Png
             ApngFrame frame)
         {
             IHDRChunk header = file.IHDRChunk;
-            PLTEChunk palette = file.PLTEChunk;
-            tRNSChunk transparency = file.tRNSChunk;
+            PLTEChunk? palette = file.PLTEChunk;
+            tRNSChunk? transparency = file.tRNSChunk;
 
             var mem = new MultiMemoryStream(frame.IDATChunks.Select(chunk => chunk.FrameData));
             _buffer = ByteBuffer.Create(mem, header.BitDepth);

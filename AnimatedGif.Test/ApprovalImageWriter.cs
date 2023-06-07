@@ -21,13 +21,17 @@ namespace AnimatedGif.Test
         public virtual string GetApprovalFilename(string basename)
         {
             var basepath = Path.GetDirectoryName(basename);
-            return Path.Combine(basepath, "Outputs", DirName, $"{DirName}#{FrameName}.approved.png");
+            return basepath is null ?
+                        Path.Combine("Outputs", DirName, $"{DirName}#{FrameName}.approved.png") :
+                        Path.Combine(basepath, "Outputs", DirName, $"{DirName}#{FrameName}.approved.png");
         }
 
         public virtual string GetReceivedFilename(string basename)
         {
             var basepath = Path.GetDirectoryName(basename);
-            return Path.Combine(basepath, "Outputs", DirName, $"{DirName}#{FrameName}.received.png");
+            return basepath is null ?
+                        Path.Combine("Outputs", DirName, $"{DirName}#{FrameName}.received.png") :
+                        Path.Combine(basepath, "Outputs", DirName, $"{DirName}#{FrameName}.received.png");
         }
 
         public string WriteReceivedFile(string received)

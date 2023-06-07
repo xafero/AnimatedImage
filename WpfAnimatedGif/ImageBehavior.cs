@@ -228,7 +228,7 @@ namespace WpfAnimatedGif
             return (ImageAnimationController)imageControl.GetValue(AnimationControllerPropertyKey.DependencyProperty);
         }
 
-        private static void SetAnimationController(DependencyObject obj, ImageAnimationController value)
+        private static void SetAnimationController(DependencyObject obj, ImageAnimationController? value)
         {
             obj.SetValue(AnimationControllerPropertyKey, value);
         }
@@ -329,7 +329,7 @@ namespace WpfAnimatedGif
         public static void RemoveAnimationCompletedHandler(Image d, RoutedEventHandler handler)
         {
             var element = d as UIElement;
-            if (element == null)
+            if (element is null)
                 return;
             element.RemoveHandler(AnimationCompletedEvent, handler);
         }
@@ -338,8 +338,8 @@ namespace WpfAnimatedGif
 
         private static void AnimatedSourceChanged(DependencyObject o, DependencyPropertyChangedEventArgs e)
         {
-            Image imageControl = o as Image;
-            if (imageControl == null)
+            var imageControl = o as Image;
+            if (imageControl is null)
                 return;
 
             var oldValue = e.OldValue as ImageSource;
@@ -354,7 +354,7 @@ namespace WpfAnimatedGif
                 }
                 return;
             }
-            if (oldValue != null)
+            if (oldValue is not null)
             {
                 imageControl.Loaded -= ImageControlLoaded;
                 imageControl.Unloaded -= ImageControlUnloaded;
@@ -362,11 +362,11 @@ namespace WpfAnimatedGif
 
                 AnimationCache.RemoveControlForSource(oldValue, imageControl);
                 var controller = GetAnimationController(imageControl);
-                if (controller != null)
+                if (controller is not null)
                     controller.Dispose();
                 imageControl.Source = null;
             }
-            if (newValue != null)
+            if (newValue is not null)
             {
                 imageControl.Loaded += ImageControlLoaded;
                 imageControl.Unloaded += ImageControlUnloaded;
@@ -382,7 +382,7 @@ namespace WpfAnimatedGif
             if (sender is Image img && img.IsLoaded)
             {
                 var controller = GetAnimationController(img);
-                if (controller != null)
+                if (controller is not null)
                 {
                     bool isVisible = (bool)e.NewValue;
                     controller.SetSuspended(!isVisible);
@@ -392,33 +392,33 @@ namespace WpfAnimatedGif
 
         private static void ImageControlLoaded(object sender, RoutedEventArgs e)
         {
-            Image imageControl = sender as Image;
-            if (imageControl == null)
+            var imageControl = sender as Image;
+            if (imageControl is null)
                 return;
             InitAnimationOrImage(imageControl);
         }
 
         static void ImageControlUnloaded(object sender, RoutedEventArgs e)
         {
-            Image imageControl = sender as Image;
-            if (imageControl == null)
+            var imageControl = sender as Image;
+            if (imageControl is null)
                 return;
             var source = GetAnimatedSource(imageControl);
-            if (source != null)
+            if (source is not null)
                 AnimationCache.RemoveControlForSource(source, imageControl);
             var controller = GetAnimationController(imageControl);
-            if (controller != null)
+            if (controller is not null)
                 controller.Dispose();
         }
 
         private static void AnimationPropertyChanged(DependencyObject o, DependencyPropertyChangedEventArgs e)
         {
-            Image imageControl = o as Image;
-            if (imageControl == null)
+            var imageControl = o as Image;
+            if (imageControl is null)
                 return;
 
             ImageSource source = GetAnimatedSource(imageControl);
-            if (source != null)
+            if (source is not null)
             {
                 if (imageControl.IsLoaded)
                     InitAnimationOrImage(imageControl);
@@ -427,14 +427,14 @@ namespace WpfAnimatedGif
 
         private static void AnimateInDesignModeChanged(DependencyObject o, DependencyPropertyChangedEventArgs e)
         {
-            Image imageControl = o as Image;
-            if (imageControl == null)
+            var imageControl = o as Image;
+            if (imageControl is null)
                 return;
 
             bool newValue = (bool)e.NewValue;
 
             ImageSource source = GetAnimatedSource(imageControl);
-            if (source != null && imageControl.IsLoaded)
+            if (source is not null && imageControl.IsLoaded)
             {
                 if (newValue)
                     InitAnimationOrImage(imageControl);
@@ -446,14 +446,14 @@ namespace WpfAnimatedGif
         private static void InitAnimationOrImage(Image imageControl)
         {
             var controller = GetAnimationController(imageControl);
-            if (controller != null)
+            if (controller is not null)
                 controller.Dispose();
             SetAnimationController(imageControl, null);
             SetIsAnimationLoaded(imageControl, false);
 
             var rawSource = GetAnimatedSource(imageControl);
-            BitmapSource source = rawSource as BitmapSource;
-            if (source == null && rawSource != null)
+            var source = rawSource as BitmapSource;
+            if (source is null && rawSource is not null)
             {
                 imageControl.Source = rawSource;
                 return;
@@ -467,24 +467,25 @@ namespace WpfAnimatedGif
             // BaseUri is set. This method will be called again when BaseUri is set.
             bool isLoadingDeferred = IsLoadingDeferred(source, imageControl);
 
-            if (source != null && shouldAnimate && !isLoadingDeferred)
+            if (source is not null && shouldAnimate && !isLoadingDeferred)
             {
                 // Case of image being downloaded: retry after download is complete
                 if (source.IsDownloading)
                 {
-                    EventHandler handler = null;
-                    handler = (sender, args) =>
-                    {
-                        source.DownloadCompleted -= handler;
-                        InitAnimationOrImage(imageControl);
-                    };
-                    source.DownloadCompleted += handler;
+                    source.DownloadCompleted += Handler;
                     imageControl.Source = source;
+
+                    void Handler(object? sender, EventArgs args)
+                    {
+                        source.DownloadCompleted -= Handler;
+                        InitAnimationOrImage(imageControl);
+                    }
+
                     return;
                 }
 
                 var animation = GetAnimation(imageControl, source);
-                if (animation != null)
+                if (animation is not null)
                 {
                     if (animation.Count > 0)
                     {
@@ -504,17 +505,17 @@ namespace WpfAnimatedGif
                 }
             }
             imageControl.Source = source;
-            if (source != null)
+            if (source is not null)
             {
                 SetIsAnimationLoaded(imageControl, true);
                 imageControl.RaiseEvent(new RoutedEventArgs(AnimationLoadedEvent, imageControl));
             }
         }
 
-        private static RendererAnimation GetAnimation(Image imageControl, BitmapSource source)
+        private static RendererAnimation? GetAnimation(Image imageControl, BitmapSource source)
         {
             var cacheEntry = AnimationCache.Get(source);
-            if (cacheEntry == null)
+            if (cacheEntry is null)
             {
                 if (FrameRenderer.TryCreate(source, imageControl, out var renderer))
                 {
@@ -523,7 +524,7 @@ namespace WpfAnimatedGif
                 }
             }
 
-            if (cacheEntry != null)
+            if (cacheEntry is not null)
             {
                 var animation = new RendererAnimation(cacheEntry.Renderer.Clone())
                 {
@@ -573,13 +574,13 @@ namespace WpfAnimatedGif
             }
         }
 
-        private static bool IsLoadingDeferred(BitmapSource source, Image imageControl)
+        private static bool IsLoadingDeferred(BitmapSource? source, Image imageControl)
         {
             var bmp = source as BitmapImage;
-            if (bmp == null)
+            if (bmp is null)
                 return false;
-            if (bmp.UriSource != null && !bmp.UriSource.IsAbsoluteUri)
-                return bmp.BaseUri == null && (imageControl as IUriContext)?.BaseUri == null;
+            if (bmp.UriSource is not null && !bmp.UriSource.IsAbsoluteUri)
+                return bmp.BaseUri is null && (imageControl as IUriContext)?.BaseUri is null;
             return false;
         }
 
@@ -593,26 +594,6 @@ namespace WpfAnimatedGif
             if (repeatCountFromMetadata == 0)
                 return RepeatBehavior.Forever;
             return new RepeatBehavior(repeatCountFromMetadata);
-        }
-
-        private static BitmapMetadata GetApplicationExtension(BitmapDecoder decoder, string application)
-        {
-            int count = 0;
-            string query = "/appext";
-            BitmapMetadata extension = decoder.Metadata.GetQueryOrNull<BitmapMetadata>(query);
-            while (extension != null)
-            {
-                byte[] bytes = extension.GetQueryOrNull<byte[]>("/Application");
-                if (bytes != null)
-                {
-                    string extApplication = Encoding.ASCII.GetString(bytes);
-                    if (extApplication == application)
-                        return extension;
-                }
-                query = string.Format("/[{0}]appext", ++count);
-                extension = decoder.Metadata.GetQueryOrNull<BitmapMetadata>(query);
-            }
-            return null;
         }
 
         // For debug purposes

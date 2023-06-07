@@ -16,31 +16,28 @@ namespace WpfAnimatedGif.Formats.Png
         public static readonly byte[] Signature = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 
         private List<IDATChunk> idatChunks = new List<IDATChunk>();
-        private List<Chunk> otherChunks = new List<Chunk>();
+
+        public ApngFrame(IHDRChunk header)
+        {
+            IHDRChunk = header;
+            fcTLChunk = null;
+        }
+
+        public ApngFrame(IHDRChunk header, fcTLChunk framecontrol)
+        {
+            IHDRChunk = header;
+            fcTLChunk = framecontrol;
+        }
 
         /// <summary>
         ///     Gets or Sets the acTL chunk
         /// </summary>
-        public IHDRChunk IHDRChunk { get; set; }
+        public IHDRChunk IHDRChunk { get; }
 
         /// <summary>
         ///     Gets or Sets the fcTL chunk
         /// </summary>
-        public fcTLChunk fcTLChunk { get; set; }
-
-        /// <summary>
-        ///     Gets or Sets the IEND chunk
-        /// </summary>
-        public IENDChunk IENDChunk { get; set; }
-
-        /// <summary>
-        ///     Gets or Sets the other chunks
-        /// </summary>
-        public List<Chunk> OtherChunks
-        {
-            get { return otherChunks; }
-            set { otherChunks = value; }
-        }
+        public fcTLChunk? fcTLChunk { get; }
 
         /// <summary>
         ///     Gets or Sets the IDAT chunks
@@ -52,14 +49,6 @@ namespace WpfAnimatedGif.Formats.Png
         }
 
         /// <summary>
-        ///     Add an Chunk to end end of existing list.
-        /// </summary>
-        public void AddOtherChunk(Chunk chunk)
-        {
-            otherChunks.Add(chunk);
-        }
-
-        /// <summary>
         ///     Add an IDAT Chunk to end end of existing list.
         /// </summary>
         public void AddIDATChunk(IDATChunk chunk)
@@ -67,9 +56,9 @@ namespace WpfAnimatedGif.Formats.Png
             idatChunks.Add(chunk);
         }
 
-        /// <summary>
-        ///     Gets the frame as PNG FileStream.
-        /// </summary>
+        // <summary>
+        //     Gets the frame as PNG FileStream.
+        // </summary>
         //        public MemoryStream GetStream()
         //        {
         //            var ihdrChunk = new IHDRChunk(IHDRChunk);

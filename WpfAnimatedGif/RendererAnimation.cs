@@ -12,7 +12,7 @@ namespace WpfAnimatedGif
         private int _currentIndex = 0;
         private FrameRenderer _renderer;
 
-        public event Action CurrentIndexUpdated;
+        public event Action? CurrentIndexUpdated;
 
         public int CurrentIndex => _currentIndex;
         public int Count => _renderer.FrameCount;

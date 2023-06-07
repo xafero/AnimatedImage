@@ -21,10 +21,10 @@ namespace WpfAnimatedGif.Formats
 
         // variables for RestorePrevious
         private readonly byte[] _restorePixels;
-        private PngRendererFrame _previouns;
+        private PngRendererFrame? _previouns;
 
         // variables for RestoreBackground
-        private FrameRenderFrame _background;
+        private FrameRenderFrame? _background;
 
         public PngRenderer(ApngFile file)
         {
@@ -32,6 +32,7 @@ namespace WpfAnimatedGif.Formats
             Width = file.IHDRChunk.Width;
             Height = file.IHDRChunk.Height;
             _bitmap = new WriteableBitmap(Width, Height, 96, 96, PixelFormats.Pbgra32, null);
+            _restorePixels = new byte[Width * Height * 4];
             _work = new byte[Width * Height * 4];
 
             var frames = new List<PngRendererFrame>();
@@ -43,7 +44,6 @@ namespace WpfAnimatedGif.Formats
 
                 frames.Add(frame);
             }
-
 
             if (frames.Count == 0)
             {
@@ -64,7 +64,8 @@ namespace WpfAnimatedGif.Formats
                     ColorType.GlayscaleAlpha => new GrayscaleFrame(file, pngfrm, span),
                     ColorType.Color => new ColorFrame(file, pngfrm, span),
                     ColorType.ColorAlpha => new ColorFrame(file, pngfrm, span),
-                    ColorType.IndexedColor => new IndexedFrame(file, pngfrm, span)
+                    ColorType.IndexedColor => new IndexedFrame(file, pngfrm, span),
+                    _ => throw new ArgumentException()
                 };
             }
         }
@@ -225,7 +226,7 @@ namespace WpfAnimatedGif.Formats
             }
         }
 
-        public abstract void Render(WriteableBitmap bitmap, byte[] work, byte[] backup);
+        public abstract void Render(WriteableBitmap bitmap, byte[] work, byte[]? backup);
 
 
         private static T Nvl<T>(T? v1, T v2) where T : struct => v1.HasValue ? v1.Value : v2;
@@ -274,7 +275,7 @@ namespace WpfAnimatedGif.Formats
             };
         }
 
-        public override void Render(WriteableBitmap bitmap, byte[] work, byte[] backup)
+        public override void Render(WriteableBitmap bitmap, byte[] work, byte[]? backup)
         {
             bitmap.CopyPixels(Bounds, work, 4 * Bounds.Width, 0);
 
@@ -378,7 +379,7 @@ namespace WpfAnimatedGif.Formats
             _hasAlpha = file.IHDRChunk.ColorType == ColorType.ColorAlpha;
         }
 
-        public override void Render(WriteableBitmap bitmap, byte[] work, byte[] backup)
+        public override void Render(WriteableBitmap bitmap, byte[] work, byte[]? backup)
         {
             bitmap.CopyPixels(Bounds, work, 4 * Bounds.Width, 0);
 
@@ -462,12 +463,14 @@ namespace WpfAnimatedGif.Formats
         private PngColor[] _palette;
         private byte[] _transparency;
 
-        private byte[] _decompress;
+        private byte[]? _decompress;
 
         public IndexedFrame(ApngFile file, Png.ApngFrame frame, TimeSpan begin) : base(file, frame, begin)
         {
-            _data = new IDATStream(file, frame);
+            if (file.PLTEChunk is null)
+                throw new ArgumentNullException("file.PLTEChunk is null");
 
+            _data = new IDATStream(file, frame);
             _palette = file.PLTEChunk.Colors;
 
             if (file.tRNSChunk is null)
@@ -487,7 +490,7 @@ namespace WpfAnimatedGif.Formats
             }
         }
 
-        public override void Render(WriteableBitmap bitmap, byte[] work, byte[] backup)
+        public override void Render(WriteableBitmap bitmap, byte[] work, byte[]? backup)
         {
             if (_decompress is null)
             {

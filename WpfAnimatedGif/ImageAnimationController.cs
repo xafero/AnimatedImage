@@ -19,12 +19,13 @@ namespace WpfAnimatedGif
         internal ImageAnimationController(Image image, RendererAnimation animation, bool autoStart)
         {
             _image = image;
-            _animation = animation;
+            _clock = animation.CreateClock();
+
+            _animation = _clock.Timeline as RendererAnimation ?? animation;
+            _clock.Completed += AnimationCompleted;
             _animation.CurrentIndexUpdated += OnCurrentFrameChanged;
-            _animation.Completed += AnimationCompleted;
-            _clock = _animation.CreateClock();
+
             _clockController = _clock.Controller;
-            
 
 
             // ReSharper disable once PossibleNullReferenceException
@@ -37,7 +38,7 @@ namespace WpfAnimatedGif
                 _clockController.Resume();
         }
 
-        void AnimationCompleted(object sender, EventArgs e)
+        void AnimationCompleted(object? sender, EventArgs e)
         {
             _image.RaiseEvent(new System.Windows.RoutedEventArgs(ImageBehavior.AnimationCompletedEvent, _image));
         }
@@ -82,7 +83,7 @@ namespace WpfAnimatedGif
         /// <param name="index">The index of the frame to seek to</param>
         public void GotoFrame(int index)
         {
-            var startTime= _animation.GetStartTime(index);
+            var startTime = _animation.GetStartTime(index);
             _clockController.Seek(startTime, TimeSeekOrigin.BeginTime);
         }
 
@@ -140,11 +141,11 @@ namespace WpfAnimatedGif
         /// <summary>
         /// Raised when the current frame changes.
         /// </summary>
-        public event EventHandler CurrentFrameChanged;
+        public event EventHandler? CurrentFrameChanged;
 
         private void OnCurrentFrameChanged()
         {
-            EventHandler handler = CurrentFrameChanged;
+            EventHandler? handler = CurrentFrameChanged;
             if (handler != null) handler(this, EventArgs.Empty);
         }
 
@@ -174,7 +175,7 @@ namespace WpfAnimatedGif
             if (disposing)
             {
                 _image.BeginAnimation(Image.SourceProperty, null);
-                _animation.Completed -= AnimationCompleted;
+                _clock.Completed -= AnimationCompleted;
                 _animation.CurrentIndexUpdated -= OnCurrentFrameChanged;
                 _image.Source = null;
             }

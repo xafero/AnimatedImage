@@ -1,9 +1,8 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.IO.Packaging;
 using System.Net;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media.Imaging;
 using System.Windows.Resources;
@@ -14,6 +13,10 @@ namespace WpfAnimatedGif.Formats
 {
     internal abstract class FrameRenderer
     {
+#if !NETFRAMEWORK
+        private static readonly System.Net.Http.HttpClient s_client = new();
+#endif
+
         public abstract int CurrentIndex { get; }
 
         public abstract int FrameCount { get; }
@@ -50,25 +53,33 @@ namespace WpfAnimatedGif.Formats
 
         public abstract FrameRenderer Clone();
 
-        public static bool TryCreate(BitmapSource image, IUriContext context, out FrameRenderer renderer)
+        public static bool TryCreate(
+            BitmapSource image,
+            IUriContext context,
+#if !NETFRAMEWORK
+            [MaybeNullWhen(false)]
+#endif
+            out FrameRenderer renderer)
         {
             if (image is BitmapFrame frame)
             {
-                if (Uri.TryCreate(frame.BaseUri, frame.ToString(), out var uri))
+                if (Uri.TryCreate(frame.BaseUri, frame.ToString(), out var uri)
+                    && TryOpen(uri, out var stream))
                 {
-                    using var stream = Open(uri);
-
-                    if (frame.Decoder is GifBitmapDecoder)
+                    using (stream)
                     {
-                        stream.Position = 0;
-                        renderer = new GifRenderer(new GifFile(stream));
-                        return true;
-                    }
+                        if (frame.Decoder is GifBitmapDecoder)
+                        {
+                            stream.Position = 0;
+                            renderer = new GifRenderer(new GifFile(stream));
+                            return true;
+                        }
 
-                    return TryCreate(stream, out renderer);
+                        return TryCreate(stream, out renderer);
+                    }
                 }
 
-                renderer = null;
+                renderer = null!;
                 return false;
             }
 
@@ -89,16 +100,22 @@ namespace WpfAnimatedGif.Formats
                             uri = new Uri(baseUri, uri);
                     }
 
-                    using var stream = Open(uri);
-                    return TryCreate(stream, out renderer);
+                    if (TryOpen(uri, out var stream))
+                        using (stream)
+                            return TryCreate(stream, out renderer);
                 }
             }
 
-            renderer = null;
+            renderer = null!;
             return false;
         }
 
-        private static bool TryCreate(Stream stream, out FrameRenderer renderer)
+        private static bool TryCreate(
+            Stream stream,
+#if !NETFRAMEWORK
+            [MaybeNullWhen(false)]
+#endif
+            out FrameRenderer renderer)
         {
             stream.Position = 0;
             var magic = new byte[Signature.MaxLength];
@@ -120,39 +137,67 @@ namespace WpfAnimatedGif.Formats
                 return true;
             }
 
-            renderer = null;
+            renderer = null!;
             return false;
         }
 
-        private static Stream Open(Uri resourceUri)
+        private static bool TryOpen(
+            Uri resourceUri,
+#if !NETFRAMEWORK
+            [MaybeNullWhen(false)]
+#endif
+            out Stream strm
+            )
         {
             var stream = OpenFirst(resourceUri);
-
-            if (!stream.CanSeek)
+            if (stream is null)
             {
-                var memstream = new MemoryStream();
-                stream.CopyTo(memstream);
-                return memstream;
+                strm = null!;
+                return false;
             }
-            return stream;
 
-            static Stream OpenFirst(Uri uri)
+            if (stream.CanSeek)
             {
-                if (uri.Scheme == PackUriHelper.UriSchemePack)
-                {
-                    StreamResourceInfo sri;
-                    if (uri.Authority == "siteoforigin:,,,")
-                        sri = Application.GetRemoteStream(uri);
-                    else
-                        sri = Application.GetResourceStream(uri);
+                strm = stream;
+                return true;
+            }
 
-                    if (sri != null)
-                        return sri.Stream;
-                }
-                else
+            var memstream = new MemoryStream();
+            stream.CopyTo(memstream);
+            strm = memstream;
+            return true;
+
+
+            static Stream? OpenFirst(Uri uri)
+            {
+                switch (uri.Scheme)
                 {
-                    WebClient wc = new WebClient();
-                    return wc.OpenRead(uri);
+                    case "pack":
+                        StreamResourceInfo sri;
+                        if (uri.Authority == "siteoforigin:,,,")
+                            sri = Application.GetRemoteStream(uri);
+                        else
+                            sri = Application.GetResourceStream(uri);
+
+                        if (sri != null)
+                            return sri.Stream;
+                        break;
+
+#if NETFRAMEWORK
+                    case "http":
+                    case "https":
+                    case "file":
+                    case "ftp":
+                        var wc = new WebClient();
+                        return wc.OpenRead(uri);
+#else
+                    case "http":
+                    case "https":
+                        return s_client.GetStreamAsync(uri).Result;
+
+                    case "file":
+                        return File.OpenRead(uri.LocalPath);
+#endif
                 }
 
                 return null;
