@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using AnimatedImage.Wpf;
 using Microsoft.Win32;
 
 namespace WpfAnimatedGif.Demo
