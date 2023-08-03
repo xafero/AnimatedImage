@@ -19,7 +19,7 @@ namespace AnimatedImage
 
         public abstract IBitmapFace Current { get; }
 
-        protected abstract FrameRenderFrame this[int frameIndex] { get; }
+        public abstract FrameRenderFrame this[int frameIndex] { get; }
 
         public void ProcessFrame(TimeSpan timespan)
         {

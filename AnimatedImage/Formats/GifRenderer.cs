@@ -83,7 +83,7 @@ namespace AnimatedImage.Formats
 
         public override int RepeatCount { get; }
 
-        protected override FrameRenderFrame this[int idx] => _frames[idx];
+        public override FrameRenderFrame this[int idx] => _frames[idx];
 
         public override void ProcessFrame(int frameIndex)
         {
