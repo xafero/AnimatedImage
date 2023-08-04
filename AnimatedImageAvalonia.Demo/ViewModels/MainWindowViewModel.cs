@@ -29,6 +29,7 @@ namespace AnimatedImageAvalonia.Demo.ViewModels
             Sources = new(new[] {
                 new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/bomb-once.gif")),
                 new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/Bomb.gif")),
+                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/BouncingBeachBall.png")),
                 new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/earth.gif")),
                 new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/monster.gif")),
                 new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/nonanimated.gif")),

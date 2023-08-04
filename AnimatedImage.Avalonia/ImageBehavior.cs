@@ -99,6 +99,7 @@ namespace AnimatedImage.Avalonia
                                         new IterationCount(0ul, IterationType.Infinite) :
                                         new IterationCount((ulong)renderer.RepeatCount)
                 };
+
                 for (var i = 0; i < renderer.FrameCount; ++i)
                 {
                     var keyframe = new KeyFrame() { KeyTime = renderer[i].Begin };
@@ -106,6 +107,10 @@ namespace AnimatedImage.Avalonia
 
                     _animation.Children.Add(keyframe);
                 }
+
+                var lastKeyframe = new KeyFrame() { KeyTime = renderer.Duration };
+                lastKeyframe.Setters.Add(new Setter(FrameIndexProperty, renderer.FrameCount - 1));
+                _animation.Children.Add(lastKeyframe);
 
                 Animations.Add(_animation);
 
@@ -125,7 +130,9 @@ namespace AnimatedImage.Avalonia
             {
                 if (_animation is not null)
                 {
-                    Animations.Remove(_animation);
+                    _animation.Children.Clear();
+                    _animation.IterationCount = new IterationCount(0);
+
                     _animation = null;
                 }
 
@@ -153,15 +160,11 @@ namespace AnimatedImage.Avalonia
                 if (_source is null)
                     return;
 
-                // アニメーション対象のイメージを変えた時、
-                // observer.Subscribe(new Observer<int>(HandleFrame));
-                // で初回に呼び出されるフレームが前回イメージの物が使用される。
-                // フレーム数以前より少ないとエラーとなるため剰余で回避
-                var tryIndex = frameIndex % _renderer.FrameCount;
+                if (frameIndex >= _renderer.FrameCount)
+                    _renderer.ProcessFrame(frameIndex % _renderer.FrameCount);
+                else
+                    _renderer.ProcessFrame(frameIndex);
 
-                Debug.Print("IDX: " + frameIndex);
-
-                _renderer.ProcessFrame(tryIndex);
                 var face = (WriteableBitmapFace)_renderer.Current;
 
                 if (_renderer.CurrentIndex != _oldIndex)

@@ -13,6 +13,7 @@
     <Content Include="Images\siteoforigin.gif" CopyToOutputDirectory="PreserveNewest" />
     <Resource Include="Images\bomb-once.gif" />
     <Resource Include="Images\Bomb.gif" />
+    <Resource Include="Images\BouncingBeachBall.png" />
     <Resource Include="Images\earth.gif" />
     <Resource Include="Images\monster.gif" />
     <Resource Include="Images\nonanimated.png" />

@@ -5,6 +5,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace AnimatedImage.Avalonia
 {
@@ -15,6 +16,7 @@ namespace AnimatedImage.Avalonia
             get
             {
                 _flg = !_flg;
+                Send();
                 return Current;
             }
         }
@@ -22,15 +24,18 @@ namespace AnimatedImage.Avalonia
         public IImage Current => _flg ? _tick : _tack;
 
         private bool _flg = false;
+        private readonly PixelSize _size;
+        private readonly WriteableBitmap _buffer;
         private readonly WriteableBitmap _bitmap;
         public readonly IImage _tick;
         public readonly IImage _tack;
 
         public WriteableBitmapFace(int width, int height)
         {
-            var size = new PixelSize(width, height);
+            _size = new PixelSize(width, height);
             var dpi = new Vector(96, 96);
-            _bitmap = new WriteableBitmap(size, dpi, PixelFormats.Bgra8888, null);
+            _buffer = new WriteableBitmap(_size, dpi, PixelFormats.Bgra8888, null);
+            _bitmap = new WriteableBitmap(_size, dpi, PixelFormats.Bgra8888, null);
 
             _tick = new BitmapWrapper(_bitmap);
             _tack = new BitmapWrapper(_bitmap);
@@ -41,7 +46,7 @@ namespace AnimatedImage.Avalonia
             if (width * height * 4 > buffer.Length)
                 throw new IndexOutOfRangeException();
 
-            using var bit = _bitmap.Lock();
+            using var bit = _buffer.Lock();
 
             byte* ptr = (byte*)(void*)(bit.Address);
             ptr += y * bit.RowBytes + x * 4;
@@ -67,7 +72,7 @@ namespace AnimatedImage.Avalonia
             if (width * height * 4 > buffer.Length)
                 throw new IndexOutOfRangeException();
 
-            using var bit = _bitmap.Lock();
+            using var bit = _buffer.Lock();
 
             byte* ptr = (byte*)(void*)(bit.Address);
             ptr += y * bit.RowBytes + x * 4;
@@ -87,6 +92,16 @@ namespace AnimatedImage.Avalonia
                     ptr += bit.RowBytes;
                 }
             }
+        }
+
+        private void Send()
+        {
+            using var fBit = _bitmap.Lock();
+            _buffer.CopyPixels(
+                new PixelRect(_size),
+                fBit.Address,
+                fBit.RowBytes * _size.Height,
+                fBit.RowBytes);
         }
 
         class BitmapWrapper : IImage
