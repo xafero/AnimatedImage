@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace AnimatedImageAvalonia.Demo
+namespace DemoForAvaloniaUI
 {
     public partial class MainWindow : Window
     {

@@ -8,7 +8,7 @@ using System.Windows.Threading;
 using AnimatedImage.Wpf;
 using Microsoft.Win32;
 
-namespace WpfAnimatedGif.Demo
+namespace DemoForWpf
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

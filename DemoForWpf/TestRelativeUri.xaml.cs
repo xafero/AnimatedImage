@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace WpfAnimatedGif.Demo
+namespace DemoForWpf
 {
     /// <summary>
     /// Interaction logic for TestRelativeUri.xaml
@@ -13,7 +13,7 @@ namespace WpfAnimatedGif.Demo
         public TestRelativeUri()
         {
             InitializeComponent();
-            Img = new BitmapImage(new Uri("/WpfAnimatedGif.Demo;component/Images/earth.gif", UriKind.Relative));
+            Img = new BitmapImage(new Uri("/DemoForWpf;component/Images/earth.gif", UriKind.Relative));
         }
 
 

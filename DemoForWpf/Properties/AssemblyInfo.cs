@@ -2,11 +2,11 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 
-[assembly: AssemblyTitle("WpfAnimatedGif.Demo")]
+[assembly: AssemblyTitle("DemoForWpf")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("WpfAnimatedGif.Demo")]
+[assembly: AssemblyProduct("DemoForWpf")]
 [assembly: AssemblyCopyright("Copyright ©  2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

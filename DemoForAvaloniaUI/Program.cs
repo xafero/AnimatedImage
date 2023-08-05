@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using System;
 
-namespace AnimatedImageAvalonia.Demo
+namespace DemoForAvaloniaUI
 {
     internal class Program
     {

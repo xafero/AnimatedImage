@@ -1,4 +1,4 @@
-﻿<Window x:Class="WpfAnimatedGif.Demo.TestRelativeUri"
+﻿<Window x:Class="DemoForWpf.TestRelativeUri"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:gif="https://github.com/whistyun/AnimatedImage.Wpf"

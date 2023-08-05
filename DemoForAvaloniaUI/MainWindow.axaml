@@ -3,10 +3,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:anim="https://github.com/whistyun/AnimatedImage.Avalonia"
-        xmlns:vm="clr-namespace:AnimatedImageAvalonia.Demo.ViewModels;assembly=AnimatedImageAvalonia.Demo"
+        xmlns:vm="clr-namespace:DemoForAvaloniaUI.ViewModels;assembly=DemoForAvaloniaUI"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        x:Class="AnimatedImageAvalonia.Demo.MainWindow"
-        Title="AnimatedImageAvalonia.Demo">
+        x:Class="DemoForAvaloniaUI.MainWindow"
+        Title="DemoForAvaloniaUI">
   <Window.DataContext>
     <vm:MainWindowViewModel/>
   </Window.DataContext>

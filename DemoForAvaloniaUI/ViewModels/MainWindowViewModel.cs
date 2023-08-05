@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AnimatedImageAvalonia.Demo.ViewModels
+namespace DemoForAvaloniaUI.ViewModels
 {
     public class MainWindowViewModel : ReactiveObject
     {
@@ -27,20 +27,20 @@ namespace AnimatedImageAvalonia.Demo.ViewModels
         public MainWindowViewModel()
         {
             Sources = new(new[] {
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/bomb-once.gif")),
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/Bomb.gif")),
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/BouncingBeachBall.png")),
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/earth.gif")),
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/monster.gif")),
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/nonanimated.gif")),
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/nonanimated.png")),
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/partialfirstframe.gif")),
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/pause.png")),
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/play.png")),
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/radar.gif")),
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/siteoforigin.gif")),
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/UnsupportImageFormat.bmp")),
-                new ImageSource(new Uri("avares://AnimatedImageAvalonia.Demo/Assets/working.gif"))
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/bomb-once.gif")),
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/Bomb.gif")),
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/BouncingBeachBall.png")),
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/earth.gif")),
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/monster.gif")),
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/nonanimated.gif")),
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/nonanimated.png")),
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/partialfirstframe.gif")),
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/pause.png")),
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/play.png")),
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/radar.gif")),
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/siteoforigin.gif")),
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/UnsupportImageFormat.bmp")),
+                new ImageSource(new Uri("avares://DemoForAvaloniaUI/Assets/working.gif"))
             });
 
 
