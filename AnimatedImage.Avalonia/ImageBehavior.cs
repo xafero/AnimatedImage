@@ -14,11 +14,15 @@ namespace AnimatedImage.Avalonia
         public static readonly AttachedProperty<double> SpeedRatioProperty =
             AvaloniaProperty.RegisterAttached<ImageBehavior, Image, double>("SpeedRatio", 1d);
 
+        public static readonly AttachedProperty<RepeatBehavior> RepeatBehaviorProperty =
+            AvaloniaProperty.RegisterAttached<ImageBehavior, Image, RepeatBehavior>("RepeatBehavior", RepeatBehavior.Default);
+
 
         static ImageBehavior()
         {
             AnimatedSourceProperty.Changed.Subscribe(Observer.Create<Uri>(HandleAnimatedSourceChanged));
-            SpeedRatioProperty.Changed.Subscribe(Observer.Create<double>(HandleSpeedRationChanged));
+            SpeedRatioProperty.Changed.Subscribe(Observer.Create<double>(HandleSpeedRatioChanged));
+            RepeatBehaviorProperty.Changed.Subscribe(Observer.Create<RepeatBehavior>(HandleRepeatBehavior));
         }
 
         private static void HandleAnimatedSourceChanged(AvaloniaObject element, Uri? animatedSource)
@@ -33,18 +37,29 @@ namespace AnimatedImage.Avalonia
                 if (animatedSource is not null
                  && FrameRendererCreator.TryCreate(animatedSource, out var renderer))
                 {
+                    var behavior = GetRepeatBehavior(image);
                     var speedRatio = GetSpeedRatio(image);
-                    AnimationStyle.Setup(image, speedRatio, renderer);
+                    AnimationStyle.Setup(image, speedRatio, behavior, renderer);
                 }
             }
         }
-        private static void HandleSpeedRationChanged(AvaloniaObject element, double speedRatio)
+        private static void HandleSpeedRatioChanged(AvaloniaObject element, double speedRatio)
         {
             if (element is Image image)
             {
                 foreach (var oldStyle in image.Styles.OfType<AnimationStyle>().ToArray())
                 {
                     oldStyle.SetSpeedRatio(speedRatio);
+                }
+            }
+        }
+        private static void HandleRepeatBehavior(AvaloniaObject element, RepeatBehavior behavior)
+        {
+            if (element is Image image)
+            {
+                foreach (var oldStyle in image.Styles.OfType<AnimationStyle>().ToArray())
+                {
+                    oldStyle.SetRepeatBehavior(behavior);
                 }
             }
         }
@@ -55,10 +70,16 @@ namespace AnimatedImage.Avalonia
         public static void SetSpeedRatio(AvaloniaObject obj, double ratio)
             => ((Image)obj).SetValue(SpeedRatioProperty, ratio);
 
+        public static void SetRepeatBehavior(AvaloniaObject obj, RepeatBehavior behavior)
+            => ((Image)obj).SetValue(RepeatBehaviorProperty, behavior);
+
         public static Uri GetAnimatedSource(AvaloniaObject obj)
             => obj.GetValue(AnimatedSourceProperty);
 
         public static double GetSpeedRatio(AvaloniaObject obj)
             => obj.GetValue(SpeedRatioProperty);
+
+        public static RepeatBehavior GetRepeatBehavior(AvaloniaObject obj)
+            => obj.GetValue(RepeatBehaviorProperty);
     }
 }

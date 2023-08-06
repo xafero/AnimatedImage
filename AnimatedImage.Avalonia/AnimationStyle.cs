@@ -14,6 +14,7 @@ namespace AnimatedImage.Avalonia
             AvaloniaProperty.RegisterAttached<AnimationStyle, Image, int>("FrameIndex");
 
         private Image _image;
+        private IterationCount _defaultCount;
         private Animation? _animation;
         private readonly FrameRenderer _renderer;
         private Observable<IImage>? _source;
@@ -26,13 +27,14 @@ namespace AnimatedImage.Avalonia
             _image = image;
             _renderer = renderer;
             _source = new Observable<IImage>();
+            _defaultCount = renderer.RepeatCount == 0 ?
+                                IterationCount.Infinite :
+                                new IterationCount((ulong)renderer.RepeatCount);
 
             _animation = new Animation()
             {
                 Duration = renderer.Duration,
-                IterationCount = renderer.RepeatCount == 0 ?
-                                    new IterationCount(0ul, IterationType.Infinite) :
-                                    new IterationCount((ulong)renderer.RepeatCount)
+                IterationCount = _defaultCount,
             };
 
             for (var i = 0; i < renderer.FrameCount; ++i)
@@ -55,10 +57,37 @@ namespace AnimatedImage.Avalonia
             _disposable1 = observer.Subscribe(new Observer<int>(HandleFrame));
         }
 
+        public void SetIterationCount(int count)
+        {
+            if (_animation is not null)
+                _animation.IterationCount = _defaultCount;
+        }
+
         public void SetSpeedRatio(double ratio)
         {
             if (_animation is not null)
                 _animation.SpeedRatio = ratio;
+        }
+
+        public void SetRepeatBehavior(RepeatBehavior behavior)
+        {
+            if (_animation is not null)
+            {
+                if (behavior == RepeatBehavior.Default)
+                    _animation.IterationCount = _defaultCount;
+
+                else if (behavior == RepeatBehavior.Forever)
+                    _animation.IterationCount = IterationCount.Infinite;
+
+                else if (behavior.HasCount)
+                    _animation.IterationCount = new IterationCount(behavior.Count);
+
+                else if (behavior.HasDuration)
+                {
+                    var count = (ulong)Math.Ceiling(behavior.Duration.Ticks / (double)_animation.Duration.Ticks);
+                    _animation.IterationCount = new IterationCount(count);
+                }
+            }
         }
 
         public void Dispose()
@@ -112,10 +141,11 @@ namespace AnimatedImage.Avalonia
             else _source.OnNext(face.Current);
         }
 
-        public static void Setup(Image image, double speedRatio, FrameRenderer renderer)
+        public static void Setup(Image image, double speedRatio, RepeatBehavior behavior, FrameRenderer renderer)
         {
             var animeStyle = new AnimationStyle(image, renderer);
             animeStyle.SetSpeedRatio(speedRatio);
+            animeStyle.SetRepeatBehavior(behavior);
             image.Styles.Add(animeStyle);
         }
     }
