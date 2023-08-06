@@ -1,9 +1,6 @@
-# AnimatedImage
-
 A simple library to display animated GIF images and animated PNG images in WPF and AvaloniaUI, usable in XAML or in code.
 
-
-## How to use (WPF)
+## How to use
 
 *These properties are compatible with those of [WpfAnimatedGif](https://github.com/XamlAnimatedGif/WpfAnimatedGif).*
 
@@ -37,22 +34,11 @@ ImageBehavior.SetAnimatedSource(img, image);
 ```
 
 
-## How to use (AvaloniaUI)
+## Features
 
-It has some compatibility with WPF: set the `AnimatedSource` attached property to the image you want:
-
-```xml
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:anim="https://github.com/whistyun/AnimatedImage.Avalonia"
-        Title="MainWindow" Height="350" Width="525">
-    <Grid>
-        <Image anim:ImageBehavior.AnimatedSource="Images/animated.gif" />
-```
-
-You can also specify the repeat behavior (the default is `0x`, which means it will use the repeat count from the GIF metadata):
-
-```xml
-<Image anim:ImageBehavior.RepeatBehavior="3x"
-       anim:ImageBehavior.AnimatedSource="Images/animated.gif" />
-```
+* Animates GIF images in a normal `Image` control; no need to use a specific control
+* Takes actual frame duration into account
+* Repeat behavior can be specified; if unspecified, the repeat count from the GIF metadata is used
+* Notification when the animation completes, in case you need to do something after the animation
+* Animation preview in design mode (must be enabled explicitly)
+* Support for controlling the animation manually (pause/resume/seek)
