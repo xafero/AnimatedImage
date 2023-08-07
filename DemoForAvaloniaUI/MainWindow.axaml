@@ -19,7 +19,6 @@
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto"/>
         <ColumnDefinition Width="10*"/>
-        <ColumnDefinition Width="Auto"/>
       </Grid.ColumnDefinitions>
 
       <Label Grid.Row="0" Grid.Column="0">Image</Label>
@@ -29,15 +28,6 @@
           ItemsSource="{Binding Sources}"
           SelectedItem="{Binding SelectedSource}"
           />
-
-      <Label Grid.Row="1" Grid.Column="0">Repeat</Label>
-      <StackPanel  Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
-        <RadioButton GroupName="Repeat">Default</RadioButton>
-        <RadioButton GroupName="Repeat">Forever</RadioButton>
-      </StackPanel>
-
-      <Button Grid.Row="0" Grid.Column="2">Open file</Button>
-      <Button Grid.Row="1" Grid.Column="2">Open URL</Button>
     </Grid>
 
     <Image

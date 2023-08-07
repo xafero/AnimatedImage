@@ -2,6 +2,7 @@
 
 A simple library to display animated GIF images and animated PNG images in WPF and AvaloniaUI, usable in XAML or in code.
 
+![demo](doc/demo.gif)
 
 ## How to use (WPF)
 
@@ -46,8 +47,7 @@ It has some compatibility with WPF: set the `AnimatedSource` attached property t
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:anim="https://github.com/whistyun/AnimatedImage.Avalonia"
         Title="MainWindow" Height="350" Width="525">
-    <Grid>
-        <Image anim:ImageBehavior.AnimatedSource="Images/animated.gif" />
+    <Image anim:ImageBehavior.AnimatedSource="avares://MyLib/Images/animated.gif" />
 ```
 
 You can also specify the repeat behavior (the default is `0x`, which means it will use the repeat count from the GIF metadata):
