@@ -26,12 +26,12 @@ namespace AnimatedImage.Avalonia
             _observers.Clear();
         }
 
-        class SubscribeDisposable<T> : IDisposable
+        class SubscribeDisposable<U> : IDisposable
         {
-            private List<IObserver<T>> _observers;
-            private IObserver<T> _observer;
+            private List<IObserver<U>> _observers;
+            private IObserver<U> _observer;
 
-            public SubscribeDisposable(List<IObserver<T>> observers, IObserver<T> observer)
+            public SubscribeDisposable(List<IObserver<U>> observers, IObserver<U> observer)
             {
                 _observers = observers;
                 _observer = observer;
