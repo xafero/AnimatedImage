@@ -15,14 +15,14 @@
   <PropertyGroup>
     <TargetFrameworks>$(PackageTargetFrameworks)</TargetFrameworks>
     <Version>$(PackageVersion)</Version>
-    <Description>A library to display animated GIF images and PNG images in WPF</Description>
-    <Title>Animated GIF &amp; PNG in WPF</Title>
+    <Description>A library to display animated GIF images and PNG images in AvaloniaUI</Description>
+    <Title>Animated GIF &amp; PNG in AvaloniaUI</Title>
     <Authors>Thomas Levesque, whistyun</Authors>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <PackageProjectUrl>https://github.com/whistyun/AnimatedImage</PackageProjectUrl>
     <PackageReleaseNotes>https://github.com/whistyun/AnimatedImage/releases</PackageReleaseNotes>
-    <PackageTags>wpf;animated;gif;png</PackageTags>
+    <PackageTags>avaloniaui;animated;gif;png</PackageTags>
   </PropertyGroup>
 
 
