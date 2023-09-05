@@ -6,14 +6,26 @@ using Avalonia.Styling;
 
 namespace AnimatedImage.Avalonia
 {
+    /// <summary>
+    /// Provides attached properties that display animated image in a standard Image control.
+    /// </summary>
     public class ImageBehavior
     {
+        /// <summary>
+        /// Identifies the <c>AnimatedSource</c> attached property.
+        /// </summary>
         public static readonly AttachedProperty<Uri> AnimatedSourceProperty =
             AvaloniaProperty.RegisterAttached<ImageBehavior, Image, Uri>("AnimatedSource");
 
+        /// <summary>
+        /// Identifies the <c>RepeatBehavior</c> attached property.
+        /// </summary>
         public static readonly AttachedProperty<double> SpeedRatioProperty =
             AvaloniaProperty.RegisterAttached<ImageBehavior, Image, double>("SpeedRatio", 1d);
 
+        /// <summary>
+        /// Identifies the <c>RepeatBehavior</c> attached property.
+        /// </summary>
         public static readonly AttachedProperty<RepeatBehavior> RepeatBehaviorProperty =
             AvaloniaProperty.RegisterAttached<ImageBehavior, Image, RepeatBehavior>("RepeatBehavior", RepeatBehavior.Default);
 
@@ -64,21 +76,52 @@ namespace AnimatedImage.Avalonia
             }
         }
 
+        /// <summary>
+        /// Sets the value of the <c>AnimatedSource</c> attached property for the specified object.
+        /// </summary>
+        /// <param name="obj">The element on which to set the property value.</param>
+        /// <param name="uri">The animated image to display.</param>
         public static void SetAnimatedSource(AvaloniaObject obj, Uri uri)
             => ((Image)obj).SetValue(AnimatedSourceProperty, uri);
 
+        /// <summary>
+        /// Sets the value of the <c>SpeedRatio</c> attached property for the specified object.
+        /// </summary>
+        /// <param name="obj">The element on which to set the property value.</param>
+        /// <param name="ratio">The speed ratio of the animated image.</param>
+        /// <remarks>The <c>AnimationSpeedRatio</c> and <c>AnimationDuration</c> properties are mutually exclusive, only one can be set at a time.</remarks>
         public static void SetSpeedRatio(AvaloniaObject obj, double ratio)
             => ((Image)obj).SetValue(SpeedRatioProperty, ratio);
 
+        /// <summary>
+        /// Sets the value of the <c>RepeatBehavior</c> attached property for the specified object.
+        /// </summary>
+        /// <param name="obj">The element on which to set the property value.</param>
+        /// <param name="behavior">The repeat behavior of the animated image.</param>
         public static void SetRepeatBehavior(AvaloniaObject obj, RepeatBehavior behavior)
             => ((Image)obj).SetValue(RepeatBehaviorProperty, behavior);
 
+        /// <summary>
+        /// Gets the value of the <c>AnimatedSource</c> attached property for the specified object.
+        /// </summary>
+        /// <param name="obj">The element from which to read the property value.</param>
+        /// <returns>The currently displayed animated image.</returns>
         public static Uri GetAnimatedSource(AvaloniaObject obj)
             => obj.GetValue(AnimatedSourceProperty);
 
+        /// <summary>
+        /// Gets the value of the <c>SpeedRatio</c> attached property for the specified object.
+        /// </summary>
+        /// <param name="obj">The element from which to read the property value.</param>
+        /// <returns>The speed ratio for the animated image.</returns>
         public static double GetSpeedRatio(AvaloniaObject obj)
             => obj.GetValue(SpeedRatioProperty);
 
+        /// <summary>
+        /// Gets the value of the <c>RepeatBehavior</c> attached property for the specified object.
+        /// </summary>
+        /// <param name="obj">The element from which to read the property value.</param>
+        /// <returns>The repeat behavior of the animated image.</returns>
         public static RepeatBehavior GetRepeatBehavior(AvaloniaObject obj)
             => obj.GetValue(RepeatBehaviorProperty);
     }

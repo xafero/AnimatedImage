@@ -7,20 +7,48 @@ using AnimatedImage.Formats.Png;
 
 namespace AnimatedImage
 {
+    /// <summary>
+    /// Rendering helper for one image source.
+    /// </summary>
     public abstract class FrameRenderer
     {
+        /// <summary>
+        /// Currently drawn frame index.
+        /// </summary>
         public abstract int CurrentIndex { get; }
 
+        /// <summary>
+        /// Total frame count.
+        /// </summary>
         public abstract int FrameCount { get; }
 
+        /// <summary>
+        /// How many repeat animation loop.
+        /// This value is got from the image source.
+        /// </summary>
         public abstract int RepeatCount { get; }
 
+        /// <summary>
+        /// The duration of one loop of animation.
+        /// </summary>
         public abstract TimeSpan Duration { get; }
 
+        /// <summary>
+        /// The image whitch the current frame was drawn.
+        /// </summary>
         public abstract IBitmapFace Current { get; }
 
+        /// <summary>
+        /// Accesses a frame information
+        /// </summary>
+        /// <param name="frameIndex">The frame index</param>
+        /// <returns></returns>
         public abstract FrameRenderFrame this[int frameIndex] { get; }
 
+        /// <summary>
+        /// Computes target frame to be drawn from elapsed time, and draws it.
+        /// </summary>
+        /// <param name="timespan">The elapsed time. It may be larger than <see cref="Duration"/>.</param>
         public void ProcessFrame(TimeSpan timespan)
         {
             while (timespan > Duration)
@@ -39,12 +67,35 @@ namespace AnimatedImage
             }
         }
 
+        /// <summary>
+        /// Draws the frame indicated by index.
+        /// </summary>
+        /// <param name="frameIndex">The target frame index.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// frameindex is less than 0, or larger than or equals to the count of frames.
+        /// </exception>
         public abstract void ProcessFrame(int frameIndex);
 
+        /// <summary>
+        /// Retrieves the elapsed time until the specified frame is drawn. If the first frame is specified, returns 0 seconds.
+        /// </summary>
+        /// <param name="idx"></param>
+        /// <returns></returns>
         public abstract TimeSpan GetStartTime(int idx);
 
+        /// <summary>
+        /// Clones this instance.
+        /// </summary>
+        /// <returns>the cloned instance.</returns>
         public abstract FrameRenderer Clone();
 
+        /// <summary>
+        /// Parses the binary stream and creats a FrameRenderer instance.
+        /// </summary>
+        /// <param name="stream">File streams, response data, etc.</param>
+        /// <param name="factory">A wrapper for image creation and image rendering.</param>
+        /// <param name="renderer">created instance.</param>
+        /// <returns>Returns true if a binary stream is supported.</returns>
         public static bool TryCreate(
             Stream stream,
             IBitmapFaceFactory factory,
@@ -118,16 +169,46 @@ namespace AnimatedImage
         }
     }
 
+    /// <summary>
+    /// Encapsulates frame area and drawing time.
+    /// </summary>
     public class FrameRenderFrame
     {
+        /// <summary>
+        /// The left positions of the frame area.
+        /// </summary>
         public int X { get; }
+        /// <summary>
+        /// The top positions of the frame area.
+        /// </summary>
         public int Y { get; }
+        /// <summary>
+        /// The width of the frame area.
+        /// </summary>
         public int Width { get; }
+        /// <summary>
+        /// The height of the frame area.
+        /// </summary>
         public int Height { get; }
 
+        /// <summary>
+        /// The elapsed time until the specified frame is drawn
+        /// </summary>
         public TimeSpan Begin { get; }
+        /// <summary>
+        /// The elapsed time until the drawing result of the specified frame is disposes
+        /// </summary>
         public TimeSpan End { get; }
 
+        /// <summary>
+        /// Creates the insntace.
+        /// </summary>
+        /// <param name="x"><see cref="X"/></param>
+        /// <param name="y"><see cref="Y"/></param>
+        /// <param name="width"><see cref="Width"/></param>
+        /// <param name="height"><see cref="Height"/></param>
+        /// <param name="begin"><see cref="Begin"/></param>
+        /// <param name="end"><see cref="End"/></param>
         public FrameRenderFrame(int x, int y, int width, int height, TimeSpan begin, TimeSpan end)
         {
             X = x;
@@ -138,6 +219,11 @@ namespace AnimatedImage
             End = end;
         }
 
+        /// <summary>
+        /// Determines whether this instance contains the specified area.
+        /// </summary>
+        /// <param name="frame">The specified area.</param>
+        /// <returns>Returns true if this instance contains the specified area.</returns>
         public bool IsInvolve(FrameRenderFrame frame)
         {
             return X <= frame.X
