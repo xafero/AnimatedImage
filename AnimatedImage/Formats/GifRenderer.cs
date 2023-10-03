@@ -267,7 +267,7 @@ namespace AnimatedImage.Formats
             }
             else
             {
-                end = begin + TimeSpan.FromMilliseconds(gce.Delay == 0 ? 100 : gce.Delay);
+                end = begin + TimeSpan.FromMilliseconds(gce.Delay < 20 ? 100 : gce.Delay);
                 method = (FrameDisposalMethod)gce.DisposalMethod;
                 transparencyIndex = gce.HasTransparency ? gce.TransparencyIndex : -1;
             }
