@@ -189,6 +189,7 @@ namespace AnimatedImage.Formats
         private readonly GifImageData _data;
         private readonly int _transparencyIndex;
         private byte[]? _decompress;
+        private readonly bool _interlace;
 
         public GifRendererFrame(
                 GifFile file, GifFrame frame,
@@ -204,6 +205,7 @@ namespace AnimatedImage.Formats
                        ?? throw new FormatException("ColorTable not found");
             _data = frame.ImageData;
             _transparencyIndex = transparencyIndex;
+            _interlace = frame.Descriptor.Interlace;
 
             DisposalMethod = method;
         }
@@ -228,25 +230,65 @@ namespace AnimatedImage.Formats
                 Array.Copy(work, backup, Width * Height * 4);
             }
 
-            int j = 0;
-            for (var i = 0; i < _decompress.Length; ++i)
+            if (_interlace)
             {
-                var idx = _decompress[i];
-
-                if (idx == _transparencyIndex)
+                int i = 0;
+                i += RenderInterlace(work, i, 0, 8);
+                i += RenderInterlace(work, i, 4, 8);
+                i += RenderInterlace(work, i, 2, 4);
+                i += RenderInterlace(work, i, 1, 2);
+            }
+            else
+            {
+                int j = 0;
+                for (var i = 0; i < _decompress.Length; ++i)
                 {
-                    j += 4;
-                    continue;
-                }
+                    var idx = _decompress[i];
 
-                var color = _colorTable[idx];
-                work[j++] = color.B;
-                work[j++] = color.G;
-                work[j++] = color.R;
-                work[j++] = 255;
+                    if (idx == _transparencyIndex)
+                    {
+                        j += 4;
+                        continue;
+                    }
+
+                    var color = _colorTable[idx];
+                    work[j++] = color.B;
+                    work[j++] = color.G;
+                    work[j++] = color.R;
+                    work[j++] = 255;
+                }
             }
 
             bitmap.WriteBGRA(work, X, Y, Width, Height);
+        }
+
+        private int RenderInterlace(byte[] work, int startLine, int start, int stepLine)
+        {
+            if (_decompress == null) throw new InvalidOperationException();
+
+            int i = 0;
+            for (int y = start; y < Height; y += stepLine)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    var pos = y * Width + x;
+
+                    var idx = _decompress[startLine + i];
+                    i++;
+
+                    if (idx == _transparencyIndex)
+                    {
+                        continue;
+                    }
+
+                    var color = _colorTable[idx];
+                    work[4 * pos + 0] = color.B;
+                    work[4 * pos + 1] = color.G;
+                    work[4 * pos + 2] = color.R;
+                    work[4 * pos + 3] = 255;
+                }
+            }
+            return i;
         }
 
         public static GifRendererFrame Create(GifFile file, GifFrame frame, TimeSpan begin)
