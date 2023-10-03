@@ -132,10 +132,10 @@ namespace AnimatedImage.Formats.Gif
                     oldCode = inCode;
 
                     // Drain the pixel stack.
-                    do
+                    while (pixelIndex < TotalPixels && top > 0)
                     {
                         indics[pixelIndex++] = pixelStack[--top];
-                    } while (top > 0);
+                    }
                 }
             }
 
