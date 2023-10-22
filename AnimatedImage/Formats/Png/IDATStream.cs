@@ -175,7 +175,7 @@ namespace AnimatedImage.Formats.Png
 
                 if (capacity == 0)
                 {
-                    return _stream.Read(array, offset, length);
+                    return ReadFromZlibStream(_stream, array, offset, length);
                 }
                 if (capacity >= length)
                 {
@@ -189,8 +189,24 @@ namespace AnimatedImage.Formats.Png
                     Array.Copy(_buffer, _idx, array, offset, capacity);
                     _idx = _length;
 
-                    return _stream.Read(array, offset + capacity, length - capacity) + capacity;
+                    return ReadFromZlibStream(_stream, array, offset + capacity, length - capacity) + capacity;
                 }
+            }
+
+            private int ReadFromZlibStream(ZlibStream stream, byte[] array, int offset, int length)
+            {
+#if NET6_0_OR_GREATER
+                int totalRead = 0;
+                while (totalRead < length)
+                {
+                    int bytesRead = stream.Read(array, offset + totalRead, length - totalRead);
+                    if (bytesRead == 0) break;
+                    totalRead += bytesRead;
+                }
+                return totalRead;
+#else
+                return stream.Read(array, offset, length);
+#endif
             }
 
             public abstract int Read(byte[] array, int offset, int length);
