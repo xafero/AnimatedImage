@@ -55,13 +55,14 @@ namespace AnimatedImage.Avalonia
             {
                 byte* bufferPtr = buffer0;
 
-                for (var i = 0; i < height; ++i)
+                for (var i = 0; i < Math.Min(_size.Height - y, height); ++i)
                 {
-                    for (var j = 0; j < width * 4; ++j)
+                    for (var j = 0; j < Math.Min(_size.Width - x, width) * 4; ++j)
                     {
-                        bufferPtr[0] = ptr[j];
-                        bufferPtr++;
+                        bufferPtr[j] = ptr[j];
                     }
+
+                    bufferPtr += width * 4;
                     ptr += bit.RowBytes;
                 }
             }
@@ -81,13 +82,13 @@ namespace AnimatedImage.Avalonia
             {
                 byte* bufferPtr = buffer0;
 
-                for (var i = 0; i < height; ++i)
+                for (var i = 0; i < Math.Min(_size.Height - y, height); ++i)
                 {
-                    for (var j = 0; j < width * 4; ++j)
+                    for (var j = 0; j < Math.Min(_size.Width - x, width) * 4; ++j)
                     {
-                        ptr[j] = bufferPtr[0];
-                        bufferPtr++;
+                        ptr[j] = bufferPtr[j];
                     }
+                    bufferPtr += width * 4;
 
                     ptr += bit.RowBytes;
                 }
