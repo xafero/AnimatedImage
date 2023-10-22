@@ -20,13 +20,13 @@ namespace AnimatedImage.Wpf
 
         public void ReadBGRA(byte[] buffer, int x, int y, int width, int height)
         {
-            var bounds = new Int32Rect(x, y, width, height);
+            var bounds = new Int32Rect(x, y, Math.Min(width, Bitmap.PixelWidth - x), Math.Min(height, Bitmap.PixelHeight - y));
             Bitmap.CopyPixels(bounds, buffer, 4 * width, 0);
         }
 
         public void WriteBGRA(byte[] buffer, int x, int y, int width, int height)
         {
-            var bounds = new Int32Rect(x, y, width, height);
+            var bounds = new Int32Rect(x, y, Math.Min(width, Bitmap.PixelWidth - x), Math.Min(height, Bitmap.PixelHeight - y));
             Bitmap.WritePixels(bounds, buffer, 4 * width, 0);
         }
     }
