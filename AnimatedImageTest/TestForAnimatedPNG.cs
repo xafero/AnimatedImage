@@ -82,7 +82,7 @@ namespace AnimatedImageTest
 
         public static Stream Open(string imagefilename)
         {
-            var path = $"AnimatedGif.Test.Inputs.{imagefilename}";
+            var path = $"AnimatedImageTest.Inputs.{imagefilename}";
 
             return Assembly.GetCallingAssembly().GetManifestResourceStream(path)
                    ?? throw new ArgumentException($"image not found: '{imagefilename}'");
