@@ -1,18 +1,18 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <PackageTargetFrameworks>net462;netcoreapp3.1;net6.0</PackageTargetFrameworks>
-    <WindowsPackageTargetFrameworks>net462;netcoreapp3.1;net6.0-windows</WindowsPackageTargetFrameworks>
-    <TestTargetFrameworks>net6</TestTargetFrameworks>
+    <PackageTargetFrameworks>net481;net8.0</PackageTargetFrameworks>
+    <WindowsPackageTargetFrameworks>net481;net8.0-windows</WindowsPackageTargetFrameworks>
+    <TestTargetFrameworks>net8</TestTargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
-    <AvaloniaVersion>11.0.0</AvaloniaVersion>
-    <SharpCompressVersion>0.33.0</SharpCompressVersion>
+    <AvaloniaVersion>11.0.7</AvaloniaVersion>
+    <SharpCompressVersion>0.36.0</SharpCompressVersion>
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageVersion>1.0.4</PackageVersion>
+    <PackageVersion>1.0.5</PackageVersion>
   </PropertyGroup>
 
 </Project>

@@ -29,7 +29,7 @@
     <ProjectReference Include="..\AnimatedImage\AnimatedImage.csproj" PrivateAssets="All" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net462' Or  '$(TargetFramework)' == 'netcoreapp3.1' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net481' ">
     <PackageReference Include="SharpCompress" Version="$(SharpCompressVersion)" />
   </ItemGroup>
 
